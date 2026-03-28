@@ -128,4 +128,55 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+
+  /* 滚动条美化 */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+
+  .dark ::-webkit-scrollbar-track {
+    background: #1a1a1a;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #e0e0e0;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: #333;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #999;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #666;
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: #f1f1f1;
+  }
+
+  .dark ::-webkit-scrollbar-corner {
+    background: #1a1a1a;
+  }
+
+  /* 火狐浏览器滚动条 */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #e0e0e0 #f1f1f1;
+  }
+
+  .dark * {
+    scrollbar-color: #333 #1a1a1a;
+  }
 }
