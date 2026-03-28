@@ -20,7 +20,7 @@ export default function HomePage() {
     const { theme, toggleTheme } = useTheme();
     const [input, setInput] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const [messages, setMessages] = useState<{ role: string, content: string }[]>([]);
+    const [messages, setMessages] = useState<{ role: string, content: string, reasoning?: string }[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     // 自动滚动到底部
     useEffect(() => {
@@ -32,7 +32,7 @@ export default function HomePage() {
     }, []);
 
     // 更新AI消息内容的函数
-    const updateAIMessageContent = useCallback((content: string) => {
+    const updateAIMessageContent = useCallback((content: string, reasoning?: string) => {
         setMessages(prev => {
             const newMessages = [...prev];
             for (let i = newMessages.length - 1; i >= 0; i--) {
@@ -40,7 +40,8 @@ export default function HomePage() {
                     // 直接设置完整内容（非打字机）
                     newMessages[i] = {
                         ...newMessages[i],
-                        content: content
+                        content: content,
+                        ...(reasoning !== undefined && { reasoning: reasoning })
                     };
                     return newMessages;
                 }
@@ -65,7 +66,7 @@ export default function HomePage() {
         // 2. 立即添加一个空的AI消息（占位）
         setMessages(prev => [
             ...prev,
-            { role: 'assistant', content: '' }
+            { role: 'assistant', content: '', reasoning: '' }
         ]);
 
         setInput('');
@@ -93,6 +94,7 @@ export default function HomePage() {
             const reader = res.body.getReader();
             const decoder = new TextDecoder('utf-8');
             let aiResponse = '';
+            let aiReasoning = '';
 
             while (true) {
                 const { done, value } = await reader.read();
@@ -106,6 +108,12 @@ export default function HomePage() {
                         const dataStr = line.slice(6);
 
                         if (dataStr === '[DONE]') {
+                            setMessages(prev =>{
+                                const newMessages = [...prev];
+                                console.log(newMessages);
+                                
+                                return newMessages
+                            })
                             continue;
                         }
 
@@ -115,16 +123,16 @@ export default function HomePage() {
                                 case 'reasoning':
                                     // 累积推理内容
                                     const reasoning_content = data.reasoning || "";
-                                    aiResponse += reasoning_content;
-                                    // 更新AI消息内容
-                                    updateAIMessageContent(aiResponse);
+                                    aiReasoning += reasoning_content;
+                                    // 更新AI消息的推理内容
+                                    updateAIMessageContent(aiResponse, aiReasoning);
                                     break;
                                 case 'text':
                                     // 实时显示文本
                                     const text = data.text || "";
                                     aiResponse += text;
-                                    // 更新AI消息内容
-                                    updateAIMessageContent(aiResponse);
+                                    // 更新AI消息的正式内容
+                                    updateAIMessageContent(aiResponse, aiReasoning);
                                     break;
                                 case 'tool':
                                     // 处理工具调用结果
@@ -228,12 +236,32 @@ export default function HomePage() {
 
                                     {/* 消息内容 */}
                                     <div className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
-                                        <div className={`rounded-2xl px-4 py-3 shadow-sm ${message.role === 'user'
-                                            ? 'bg-blue-500 text-white'
-                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
-                                            }`}>
-                                            <Markdown remarkPlugins={[remarkGfm]}>{message.content || (message.role === 'assistant' && isLoading ? '思考中...' : '')}</Markdown>
-                                        </div>
+                                        {/* 推理内容 */}
+                                        {message.role === 'assistant' && message.reasoning && message.reasoning.trim() && (
+                                            <div className="rounded-2xl px-4 py-2 mb-2 shadow-sm text-sm bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                                <Markdown remarkPlugins={[remarkGfm]}>{message.reasoning}</Markdown>
+                                            </div>
+                                        )}
+                                        {/* 正式回复内容 */}
+                                        {message.content || (isLoading && index === messages.length - 1) ? (
+                                            <div className={`rounded-2xl px-4 py-3 shadow-sm ${message.role === 'user'
+                                                ? 'bg-blue-500 text-white'
+                                                : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200'
+                                                }`}>
+                                                <div className="flex gap-2">
+                                                    <div className="flex-1">
+                                                        <Markdown remarkPlugins={[remarkGfm]}>{message.content || (message.role === 'assistant' && isLoading && index === messages.length - 1 ? '思考中' : '')}</Markdown>
+                                                    </div>
+                                                    {message.role === 'assistant' && isLoading && index === messages.length - 1 && (
+                                                        <div className="flex space-x-1 items-center">
+                                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : null}
                                     </div>
                                 </div>
                             </div>
