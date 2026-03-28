@@ -239,7 +239,9 @@ export default function HomePage() {
                                         {/* 推理内容 */}
                                         {message.role === 'assistant' && message.reasoning && message.reasoning.trim() && (
                                             <div className="rounded-2xl px-4 py-2 mb-2 shadow-sm text-sm bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                                                <Markdown remarkPlugins={[remarkGfm]}>{message.reasoning}</Markdown>
+                                                <div className="markdown">
+                                                    <Markdown remarkPlugins={[remarkGfm]}>{message.reasoning}</Markdown>
+                                                </div>
                                             </div>
                                         )}
                                         {/* 正式回复内容 */}
@@ -250,7 +252,9 @@ export default function HomePage() {
                                                 }`}>
                                                 <div className="flex gap-2">
                                                     <div className="flex-1">
-                                                        <Markdown remarkPlugins={[remarkGfm]}>{message.content || (message.role === 'assistant' && isLoading && index === messages.length - 1 ? '思考中' : '')}</Markdown>
+                                                        <div className="markdown">
+                                                            <Markdown remarkPlugins={[remarkGfm]}>{message.content || (message.role === 'assistant' && isLoading && index === messages.length - 1 ? '思考中' : '')}</Markdown>
+                                                        </div>
                                                     </div>
                                                     {message.role === 'assistant' && isLoading && index === messages.length - 1 && (
                                                         <div className="flex space-x-1 items-center">
