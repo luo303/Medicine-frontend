@@ -1,4 +1,5 @@
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
 
 export default function RootLayout({
   children,
@@ -8,7 +9,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="h-[100vh] flex items-center justify-center">
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
