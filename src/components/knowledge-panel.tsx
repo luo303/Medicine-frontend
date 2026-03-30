@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import { uploadKnowledgeFile, getKnowledgeFiles, type KnowledgeFile, type UploadProgress } from '@/app/api/_services/knowledge';
 
 export default function KnowledgePanel() {
     // 知识库文件上传相关状态
@@ -7,7 +8,7 @@ export default function KnowledgePanel() {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [uploadMessage, setUploadMessage] = useState('');
-    const [knowledgeFiles, setKnowledgeFiles] = useState<{id: string, name: string, size: number, uploadedAt: string}[]>([]);
+    const [knowledgeFiles, setKnowledgeFiles] = useState<KnowledgeFile[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
     
     // 允许的文件类型
@@ -51,79 +52,27 @@ export default function KnowledgePanel() {
         setUploadStatus('idle');
 
         try {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            // 使用 XMLHttpRequest 来实现带进度的上传
-            const xhr = new XMLHttpRequest();
-            
-            // 监听上传进度
-            xhr.upload.addEventListener('progress', (event) => {
-                if (event.lengthComputable) {
-                    const progress = Math.round((event.loaded / event.total) * 100);
-                    setUploadProgress(progress);
-                }
+            // 使用封装的 axios API 上传文件
+            const result = await uploadKnowledgeFile(file, (progress: UploadProgress) => {
+                setUploadProgress(progress.progress);
             });
 
-            // 上传完成
-            xhr.addEventListener('load', () => {
-                if (xhr.status === 200 || xhr.status === 201) {
-                    const response = JSON.parse(xhr.responseText);
-                    setKnowledgeFiles(prev => [...prev, {
-                        id: response.id || `file_${Date.now()}`,
-                        name: file.name,
-                        size: file.size,
-                        uploadedAt: new Date().toISOString()
-                    }]);
-                    setUploadStatus('success');
-                    setUploadMessage('文件上传成功！');
-                    setTimeout(() => {
-                        setUploadStatus('idle');
-                        setUploadMessage('');
-                    }, 3000);
-                } else {
-                    setUploadStatus('error');
-                    setUploadMessage(`上传失败：${xhr.status}`);
-                    setTimeout(() => {
-                        setUploadStatus('idle');
-                        setUploadMessage('');
-                    }, 3000);
-                }
-                setUploading(false);
-                setUploadProgress(0);
-                if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
-                }
-            });
-
-            // 上传错误
-            xhr.addEventListener('error', () => {
-                setUploadStatus('error');
-                setUploadMessage('网络错误，请重试');
-                setTimeout(() => {
-                    setUploadStatus('idle');
-                    setUploadMessage('');
-                }, 3000);
-                setUploading(false);
-                setUploadProgress(0);
-                if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
-                }
-            });
-
-            // 发送请求
-            xhr.open('POST', 'http://localhost:3000/api/knowledge/upload');
-            xhr.setRequestHeader('Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJpYXQiOjE3NzM0Njg3NjYsImV4cCI6MTgwNTAyNjM2Nn0.M6aZfnbdr-tnFs40ioarCA8dEQtlhK0GrC8S0_QNvBw');
-            xhr.send(formData);
-
-        } catch (error) {
-            console.error('上传错误:', error);
-            setUploadStatus('error');
-            setUploadMessage('上传失败，请重试');
+            setKnowledgeFiles(prev => [...prev, result]);
+            setUploadStatus('success');
+            setUploadMessage('文件上传成功！');
             setTimeout(() => {
                 setUploadStatus('idle');
                 setUploadMessage('');
             }, 3000);
+        } catch (error) {
+            console.error('上传错误:', error);
+            setUploadStatus('error');
+            setUploadMessage(`上传失败：${(error as Error).message}`);
+            setTimeout(() => {
+                setUploadStatus('idle');
+                setUploadMessage('');
+            }, 3000);
+        } finally {
             setUploading(false);
             setUploadProgress(0);
             if (fileInputRef.current) {
@@ -136,17 +85,9 @@ export default function KnowledgePanel() {
     useEffect(() => {
         const loadKnowledgeFiles = async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/knowledge/files', {
-                    headers: {
-                        'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJpYXQiOjE3NzM0Njg3NjYsImV4cCI6MTgwNTAyNjM2Nn0.M6aZfnbdr-tnFs40ioarCA8dEQtlhK0GrC8S0_QNvBw`,
-                    },
-                });
-
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.files) {
-                        setKnowledgeFiles(data.files);
-                    }
+                const files = await getKnowledgeFiles();
+                if (files) {
+                    setKnowledgeFiles(files);
                 }
             } catch (error) {
                 console.error('加载知识库文件失败:', error);
