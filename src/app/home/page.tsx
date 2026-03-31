@@ -1,26 +1,21 @@
 'use client';
 import { useEffect } from 'react';
-import { redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useTheme } from '@/components/theme-provider';
 import ChatPanel from '@/components/chat-panel';
 import KnowledgePanel from '@/components/knowledge-panel';
-
-const checkLogin = async () => {
-    const res = await fetch('/api/login');
-    const data = await res.json();
-    if (data.code === 1) {
-        return true;
-    } else {
-        redirect('/');
-    }
-}
+import { getToken } from '@/app/api/auth/token';
 
 export default function HomePage() {
+    const router = useRouter();
     const { theme, toggleTheme } = useTheme();
 
     useEffect(() => {
-        checkLogin();
-    }, []);
+        const token = getToken();
+        if (!token) {
+            router.push('/login');
+        }
+    }, [router]);
 
     return (
         <div className='flex h-screen bg-white dark:bg-black w-screen'>
