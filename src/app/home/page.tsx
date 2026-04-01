@@ -1,14 +1,13 @@
 'use client';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTheme } from '@/components/theme-provider';
 import ChatPanel from '@/components/chat-panel';
 import KnowledgePanel from '@/components/knowledge-panel';
+import SideNav from '@/components/side-nav';
 import { getToken } from '@/app/api/auth/token';
 
 export default function HomePage() {
     const router = useRouter();
-    const { theme, toggleTheme } = useTheme();
 
     useEffect(() => {
         const token = getToken();
@@ -19,11 +18,21 @@ export default function HomePage() {
 
     return (
         <div className='flex h-screen bg-white dark:bg-black w-screen'>
-            {/* 左侧聊天区域 */}
-            <ChatPanel theme={theme} toggleTheme={toggleTheme} />
+            {/* 左侧导航栏 */}
+            <SideNav />
             
-            {/* 右侧知识库文件上传区域 */}
-            <KnowledgePanel />
+            {/* 主要内容区域 */}
+            <div className='flex-1 flex overflow-hidden'>
+                {/* 左侧聊天区域 - 占据较大宽度 */}
+                <div className='flex-1 flex flex-col overflow-hidden'>
+                    <ChatPanel />
+                </div>
+                
+                {/* 右侧知识库文件上传区域 - 固定宽度 */}
+                <div className='w-96 border-l border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900'>
+                    <KnowledgePanel />
+                </div>
+            </div>
         </div>
     );
 }
