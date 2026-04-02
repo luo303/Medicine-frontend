@@ -45,7 +45,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className='w-full min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col'>
+        <div className='w-full min-h-screen bg-linear-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex flex-col'>
             <div className='absolute top-4 right-4'>
                 <Button
                     onClick={toggleTheme}
