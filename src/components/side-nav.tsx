@@ -41,7 +41,7 @@ export default function SideNav() {
                         variant="outline"
                         size="sm"
                         className={cn(
-                            "h-8 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all flex-shrink-0",
+                            "h-8 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all shrink-0",
                             collapsed ? 'px-2 mx-auto' : 'px-2'
                         )}
                         title={collapsed ? '展开导航栏' : '收起导航栏'}
@@ -75,7 +75,7 @@ export default function SideNav() {
                                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800'
                             )}
                         >
-                            <span className='text-xl flex-shrink-0 w-8 flex items-center justify-center'>
+                            <span className='text-xl shrink-0 w-8 flex items-center justify-center'>
                                 {item.icon}
                             </span>
                             <span className={cn(
