@@ -3,11 +3,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useTheme } from '@/components/theme-provider';
+import { useNavStore } from '@/store/nav-store';
 
 export default function SideNav() {
     const pathname = usePathname();
-    const { theme, toggleTheme } = useTheme();
+    const { collapsed, toggle } = useNavStore();
     
     const navItems = [
         { href: '/home', label: 'AI 助手', icon: '💬' },
@@ -16,29 +16,43 @@ export default function SideNav() {
     ];
 
     return (
-        <div className='flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 w-64'>
+        <div className={cn(
+            'flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800',
+            'transition-[width] duration-300 ease-in-out',
+            collapsed ? 'w-16' : 'w-64'
+        )}>
             {/* Logo 区域 */}
-            <div className='p-4 border-b border-gray-200 dark:border-gray-800'>
+            <div className={cn(
+                'p-4 border-b border-gray-200 dark:border-gray-800',
+                'transition-[overflow] duration-300 ease-in-out',
+                collapsed ? 'overflow-hidden' : ''
+            )}>
                 <div className='flex items-center justify-between'>
-                    <div>
-                        <h1 className='text-lg font-bold text-gray-900 dark:text-white'>
+                    <div className={cn(
+                        'transition-all duration-300 ease-in-out overflow-hidden',
+                        collapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
+                    )}>
+                        <h1 className='text-lg font-bold text-gray-900 dark:text-white whitespace-nowrap'>
                             智能医疗系统
                         </h1>
                     </div>
                     <Button
-                        onClick={toggleTheme}
+                        onClick={toggle}
                         variant="outline"
                         size="sm"
-                        className="h-8 px-2 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
-                        title={theme === 'dark' ? '切换到亮色' : '切换到暗色'}
+                        className={cn(
+                            "h-8 border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all flex-shrink-0",
+                            collapsed ? 'px-2 mx-auto' : 'px-2'
+                        )}
+                        title={collapsed ? '展开导航栏' : '收起导航栏'}
                     >
-                        {theme === 'dark' ? (
+                        {collapsed ? (
                             <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z' />
+                                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M13 5l7 7-7 7M5 5l7 7-7 7' />
                             </svg>
                         ) : (
                             <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z' />
+                                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M11 19l-7-7 7-7m8 14l-7-7 7-7' />
                             </svg>
                         )}
                     </Button>
@@ -46,7 +60,7 @@ export default function SideNav() {
             </div>
             
             {/* 导航菜单 */}
-            <nav className='flex-1 p-4 space-y-2'>
+            <nav className='flex-1 p-2 space-y-2'>
                 {navItems.map((item) => {
                     const isActive = pathname === item.href;
                     return (
@@ -54,21 +68,33 @@ export default function SideNav() {
                             key={item.href}
                             href={item.href}
                             className={cn(
-                                'flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                                'flex items-center px-3 py-2.5 rounded-lg text-sm font-medium',
+                                'transition-colors duration-200',
                                 isActive
                                     ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
                                     : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800'
                             )}
                         >
-                            <span className='text-xl'>{item.icon}</span>
-                            <span>{item.label}</span>
+                            <span className='text-xl flex-shrink-0 w-8 flex items-center justify-center'>
+                                {item.icon}
+                            </span>
+                            <span className={cn(
+                                'overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out',
+                                collapsed ? 'w-0 opacity-0' : 'w-auto opacity-100 ml-3'
+                            )}>
+                                {item.label}
+                            </span>
                         </Link>
                     );
                 })}
             </nav>
             
             {/* 底部占位 */}
-            <div className='p-4 border-t border-gray-200 dark:border-gray-800'>
+            <div className={cn(
+                'p-4 border-t border-gray-200 dark:border-gray-800',
+                'transition-[overflow,height,padding] duration-300 ease-in-out',
+                collapsed ? 'overflow-hidden h-0 p-0 border-none' : 'overflow-visible'
+            )}>
                 {/* 可以放用户信息或设置 */}
             </div>
         </div>

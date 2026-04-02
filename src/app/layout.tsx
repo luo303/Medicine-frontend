@@ -8,7 +8,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="h-[100vh] flex items-center justify-center">
+      <body className="h-screen">
         <ThemeProvider>
           {children}
         </ThemeProvider>
