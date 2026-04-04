@@ -24,6 +24,7 @@ import { formatDate, formatCurrency } from '@/lib/utils';
 import { Loader2, FileBox, LayoutList, Eye, AlertCircle, Search, X, Building2, Pill, Hospital, ShoppingCart, Receipt, PackageOpen, Truck, ClipboardList, ChevronRight, Sparkles, Download } from 'lucide-react';
 import { useNavStore } from '@/store/nav-store';
 import { exportToExcel } from '@/lib/excel-export';
+import { VirtualTable, type ColumnDef } from '@/components/virtual-table';
 import {
     getManufacturers,
     getDrugs,
@@ -43,7 +44,7 @@ import {
     type Inventory,
 } from '@/lib/reports';
 
-type ReportType = 
+type ReportType =
     | 'manufacturer'
     | 'drug'
     | 'institution'
@@ -64,6 +65,82 @@ const REPORT_CONFIG: Record<ReportType, { label: string; icon: React.ReactNode; 
     inventory: { label: '企业药品库存表', icon: <ClipboardList className="w-4.5 h-4.5" />, description: '实时监控各仓库的药品库存余量、批次及效期状态', color: '#ca8a04' },
 };
 
+/** 各报表类型的列定义（含自定义渲染函数） */
+const TABLE_COLUMNS: Record<ReportType, ColumnDef[]> = {
+    manufacturer: [
+        { key: 'approval_no', label: '企业批准号', render: (v) => <code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{v}</code> },
+        { key: 'name', label: '企业名称', render: (v) => <span className="font-semibold text-slate-800 dark:text-slate-100">{v}</span> },
+        { key: 'city', label: '所在城市' },
+        { key: 'address', label: '地址' },
+        { key: 'postal_code', label: '邮政编码' },
+        { key: 'phone', label: '联系电话' },
+        { key: 'is_gmp', label: 'GMP认证', render: (v) => <BooleanBadge value={v} /> },
+    ],
+    drug: [
+        { key: 'approval_no', label: '药品批准号', render: (v) => <code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{v}</code> },
+        { key: 'name', label: '药品名称', render: (v) => <span className="font-semibold text-slate-800 dark:text-slate-100">{v}</span> },
+        { key: 'scientific_name', label: '学名' },
+        { key: 'model', label: '型号' },
+        { key: 'specification', label: '规格' },
+        { key: 'is_prescription', label: '处方药', render: (v) => <BooleanBadge value={v} trueText="处方药" falseText="非处方药" /> },
+    ],
+    institution: [
+        { key: 'approval_no', label: '机构批准号', render: (v) => <code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{v}</code> },
+        { key: 'name', label: '机构名称', render: (v) => <span className="font-semibold text-slate-800 dark:text-slate-100">{v}</span> },
+        { key: 'address', label: '地址' },
+        { key: 'postal_code', label: '邮政编码' },
+        { key: 'phone', label: '联系电话' },
+        { key: 'is_specialized', label: '专科医院', render: (v) => <BooleanBadge value={v} /> },
+    ],
+    purchase: [
+        { key: 'order_no', label: '采购单号', render: (v) => <code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{v}</code> },
+        { key: 'order_date', label: '采购日期', render: (v) => formatDate(v) },
+        { key: 'manufacturer_name', label: '企业名称', render: (v) => <span className="font-medium text-slate-800 dark:text-slate-100">{v}</span> },
+        { key: 'total_amount', label: '总金额', render: (v) => <span className="inline-flex items-center gap-1 font-bold text-teal-600 dark:text-teal-400"><span className="text-xs opacity-60">¥</span>{formatCurrency(v)}</span> },
+        { key: 'purchaser', label: '采购员' },
+        { key: 'status', label: '状态', render: (v) => <StatusBadge status={v} /> },
+    ],
+    sales: [
+        { key: 'order_no', label: '销售单号', render: (v) => <code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{v}</code> },
+        { key: 'sales_date', label: '销售日期', render: (v) => formatDate(v) },
+        { key: 'institution_name', label: '机构名称', render: (v) => <span className="font-medium text-slate-800 dark:text-slate-100">{v}</span> },
+        { key: 'total_amount', label: '总金额', render: (v) => <span className="inline-flex items-center gap-1 font-bold text-teal-600 dark:text-teal-400"><span className="text-xs opacity-60">¥</span>{formatCurrency(v)}</span> },
+        { key: 'salesperson', label: '销售员' },
+        { key: 'status', label: '状态', render: (v) => <StatusBadge status={v} /> },
+    ],
+    purchase_storage: [
+        { key: 'warehouse_code', label: '仓号', render: (v) => <code className='text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded font-mono'>{v}</code> },
+        { key: 'location_code', label: '货位号' },
+        { key: 'orderNo', label: '采购单号', render: (v) => <code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{v}</code> },
+        { key: 'storage_date', label: '入库日期', render: (v) => formatDate(v) },
+        { key: 'drug_name', label: '药品名称', render: (v) => <span className="font-medium text-slate-800 dark:text-slate-100">{v}</span> },
+        { key: 'quantity', label: '入库数量', render: (v) => <span className="font-bold text-teal-600 dark:text-teal-400">{v}</span> },
+    ],
+    sales_outbound: [
+        { key: 'warehouse_code', label: '仓号', render: (v) => <code className='text-xs bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded font-mono'>{v}</code> },
+        { key: 'location_code', label: '货位号' },
+        { key: 'orderNo', label: '销售单号', render: (v) => <code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{v}</code> },
+        { key: 'outbound_date', label: '出库日期', render: (v) => formatDate(v) },
+        { key: 'drug_name', label: '药品名称', render: (v) => <span className="font-medium text-slate-800 dark:text-slate-100">{v}</span> },
+        { key: 'quantity', label: '出库数量', render: (v) => <span className="font-bold text-teal-600 dark:text-teal-400">{v}</span> },
+    ],
+    inventory: [
+        { key: 'warehouse_code', label: '仓号', render: (v) => <code className='text-xs bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded font-mono'>{v}</code> },
+        { key: 'location_code', label: '货位号' },
+        { key: 'batch_no', label: '批次号', render: (v) => <code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{v}</code> },
+        { key: 'drug_name', label: '药品名称', render: (v) => <span className="font-medium text-slate-800 dark:text-slate-100">{v}</span> },
+        {
+            key: 'quantity', label: '库存数量', render: (v) => (
+                <span className='inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/30 text-teal-700 dark:text-teal-300 font-bold text-sm'>
+                    {v}
+                    <Sparkles className='w-3 h-3 opacity-50' />
+                </span>
+            )
+        },
+        { key: 'last_update', label: '最后更新', render: (v) => formatDate(v) },
+    ],
+};
+
 const thClass = "px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50/95 dark:bg-slate-800/95 whitespace-nowrap border-b border-slate-200 dark:border-slate-700/60 sticky top-0 z-20 backdrop-blur-sm";
 const tdClass = "px-4 py-3 text-[13px] text-slate-800 dark:text-slate-200 whitespace-nowrap";
 const trClass = "border-b border-slate-100/60 dark:border-slate-800/40 transition-all duration-150 hover:bg-teal-50/80 dark:hover:bg-teal-950/25 report-row-enter";
@@ -77,11 +154,10 @@ const DetailItem = ({ label, value }: { label: string; value: React.ReactNode })
 );
 
 const BooleanBadge = ({ value, trueText = '是', falseText = '否' }: { value: boolean, trueText?: string, falseText?: string }) => (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 ${
-        value
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all duration-200 ${value
             ? 'bg-emerald-50/90 text-emerald-700 ring-1 ring-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-800/40'
             : 'bg-slate-100/90 text-slate-500 ring-1 ring-slate-200/60 dark:bg-slate-800/40 dark:text-slate-400 dark:ring-slate-700/40'
-    }`}>
+        }`}>
         <span className={`w-1.5 h-1.5 rounded-full ${value ? 'bg-emerald-500 shadow-sm shadow-emerald-400/50' : 'bg-slate-400'}`}></span>
         {value ? trueText : falseText}
     </span>
@@ -90,12 +166,12 @@ const BooleanBadge = ({ value, trueText = '是', falseText = '否' }: { value: b
 const StatusBadge = ({ status }: { status: string }) => {
     const isSuccess = status === 'completed' || status === '全部出库' || status === '全部入库';
     const isWarning = status === '部分出库' || status === '部分入库' || status === '已审核';
-    
+
     const config = isSuccess
         ? 'bg-emerald-50/90 text-emerald-700 ring-1 ring-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-800/40'
         : isWarning
-        ? 'bg-amber-50/90 text-amber-700 ring-1 ring-amber-200/60 dark:bg-amber-950/40 dark:text-amber-400 dark:ring-amber-800/40'
-        : 'bg-slate-100/90 text-slate-600 ring-1 ring-slate-200/60 dark:bg-slate-800/40 dark:text-slate-400 dark:ring-slate-700/40';
+            ? 'bg-amber-50/90 text-amber-700 ring-1 ring-amber-200/60 dark:bg-amber-950/40 dark:text-amber-400 dark:ring-amber-800/40'
+            : 'bg-slate-100/90 text-slate-600 ring-1 ring-slate-200/60 dark:bg-slate-800/40 dark:text-slate-400 dark:ring-slate-700/40';
 
     const dotColor = isSuccess ? 'bg-emerald-500 shadow-sm shadow-emerald-400/50' : isWarning ? 'bg-amber-500 shadow-sm shadow-amber-400/50' : 'bg-slate-400';
 
@@ -107,7 +183,7 @@ const StatusBadge = ({ status }: { status: string }) => {
     );
 };
 
-const ActionButton = ({ onClick }: { onClick: () => void }) => (
+const ActionButton = ({ onClick }: { onClick: (e: React.MouseEvent) => void }) => (
     <button
         onClick={onClick}
         className='group inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-teal-600 dark:text-teal-400 rounded-lg transition-all duration-200 hover:bg-teal-50 dark:hover:bg-teal-950/30 hover:shadow-sm hover:shadow-teal-500/10 active:scale-95'
@@ -154,7 +230,7 @@ export default function ReportsPage() {
                         className="w-[220px] h-9 pl-9 pr-8 bg-slate-50/80 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/40 rounded-xl focus-visible:ring-2 focus-visible:ring-teal-500/30 focus-visible:border-teal-300 dark:focus-visible:border-teal-600 placeholder:text-slate-400 transition-all duration-200"
                     />
                     {searchQuery && (
-                        <button 
+                        <button
                             onClick={() => setSearchQuery('')}
                             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-0.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                         >
@@ -378,352 +454,35 @@ export default function ReportsPage() {
     );
 
     const renderTable = () => {
-        switch (activeReport) {
-            case 'manufacturer': return renderManufacturerTable();
-            case 'drug': return renderDrugTable();
-            case 'institution': return renderInstitutionTable();
-            case 'purchase': return renderPurchaseTable();
-            case 'sales': return renderSalesTable();
-            case 'purchase_storage': return renderPurchaseStorageTable();
-            case 'sales_outbound': return renderSalesOutboundTable();
-            case 'inventory': return renderInventoryTable();
-            default: return null;
-        }
-    };
-
-    const renderManufacturerTable = () => {
-        const filteredData = manufacturers.filter(item => 
-            searchQuery === '' || 
-            item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.approval_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.city.toLowerCase().includes(searchQuery.toLowerCase())
-        ).filter(item => 
-            statusFilter === 'all' || 
-            (statusFilter === 'gmp' && item.is_gmp) || 
-            (statusFilter === 'non-gmp' && !item.is_gmp)
-        );
-
+        const filteredData = getFilteredData();
         if (filteredData.length === 0) return renderEmptyState();
+
+        const columns = [
+            ...TABLE_COLUMNS[activeReport],
+            {
+                key: '__action__', label: '操作', render: (value: any, item: any) => (
+                    <ActionButton onClick={(e) => {
+                        e?.stopPropagation();
+                        handleViewDetail(item);
+                    }} />
+                )
+            },
+        ];
+
+        const rowKey = (item: any) =>
+            item.approval_no || item.order_no || item.id || Math.random();
+
         return (
-            <table className='w-full border-collapse'>
-                <thead>
-                    <tr>
-                        <th className={thClass}>企业批准号</th>
-                        <th className={thClass}>企业名称</th>
-                        <th className={thClass}>所在城市</th>
-                        <th className={thClass}>地址</th>
-                        <th className={thClass}>邮政编码</th>
-                        <th className={thClass}>联系电话</th>
-                        <th className={thClass}>GMP认证</th>
-                        <th className={thClass + " text-center"}>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredData.map((item) => (
-                        <tr key={item.approval_no} className={trClass}>
-                            <td className={tdClass}><code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{item.approval_no}</code></td>
-                            <td className={tdClass}><span className="font-semibold text-slate-800 dark:text-slate-100">{item.name}</span></td>
-                            <td className={tdClass}>{item.city}</td>
-                            <td className={tdClass}>{item.address}</td>
-                            <td className={tdClass}>{item.postal_code}</td>
-                            <td className={tdClass}>{item.phone}</td>
-                            <td className={tdClass}><BooleanBadge value={item.is_gmp} /></td>
-                            <td className={tdClass + " text-center"}><ActionButton onClick={() => handleViewDetail(item)} /></td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        );
-    };
-
-    const renderDrugTable = () => {
-        const filteredData = drugs.filter(item => 
-            searchQuery === '' || 
-            item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.approval_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.scientific_name.toLowerCase().includes(searchQuery.toLowerCase())
-        ).filter(item => 
-            statusFilter === 'all' || 
-            (statusFilter === 'rx' && item.is_prescription) || 
-            (statusFilter === 'otc' && !item.is_prescription)
-        );
-
-        if (filteredData.length === 0) return renderEmptyState();
-        return (
-            <table className='w-full border-collapse'>
-                <thead>
-                    <tr>
-                        <th className={thClass}>药品批准号</th>
-                        <th className={thClass}>药品名称</th>
-                        <th className={thClass}>学名</th>
-                        <th className={thClass}>型号</th>
-                        <th className={thClass}>规格</th>
-                        <th className={thClass}>处方药</th>
-                        <th className={thClass + " text-center"}>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredData.map((item) => (
-                        <tr key={item.approval_no} className={trClass}>
-                            <td className={tdClass}><code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{item.approval_no}</code></td>
-                            <td className={tdClass}><span className="font-semibold text-slate-800 dark:text-slate-100">{item.name}</span></td>
-                            <td className={tdClass}>{item.scientific_name}</td>
-                            <td className={tdClass}>{item.model}</td>
-                            <td className={tdClass}>{item.specification}</td>
-                            <td className={tdClass}><BooleanBadge value={item.is_prescription} trueText="处方药" falseText="非处方药" /></td>
-                            <td className={tdClass + " text-center"}><ActionButton onClick={() => handleViewDetail(item)} /></td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        );
-    };
-
-    const renderInstitutionTable = () => {
-        const filteredData = institutions.filter(item => 
-            searchQuery === '' || 
-            item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.approval_no.toLowerCase().includes(searchQuery.toLowerCase())
-        ).filter(item => 
-            statusFilter === 'all' || 
-            (statusFilter === 'specialized' && item.is_specialized) || 
-            (statusFilter === 'general' && !item.is_specialized)
-        );
-
-        if (filteredData.length === 0) return renderEmptyState();
-        return (
-            <table className='w-full border-collapse'>
-                <thead>
-                    <tr>
-                        <th className={thClass}>机构批准号</th>
-                        <th className={thClass}>机构名称</th>
-                        <th className={thClass}>地址</th>
-                        <th className={thClass}>邮政编码</th>
-                        <th className={thClass}>联系电话</th>
-                        <th className={thClass}>专科医院</th>
-                        <th className={thClass + " text-center"}>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredData.map((item) => (
-                        <tr key={item.approval_no} className={trClass}>
-                            <td className={tdClass}><code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{item.approval_no}</code></td>
-                            <td className={tdClass}><span className="font-semibold text-slate-800 dark:text-slate-100">{item.name}</span></td>
-                            <td className={tdClass}>{item.address}</td>
-                            <td className={tdClass}>{item.postal_code}</td>
-                            <td className={tdClass}>{item.phone}</td>
-                            <td className={tdClass}><BooleanBadge value={item.is_specialized} /></td>
-                            <td className={tdClass + " text-center"}><ActionButton onClick={() => handleViewDetail(item)} /></td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        );
-    };
-
-    const renderPurchaseTable = () => {
-        const filteredData = purchaseOrders.filter(item => 
-            searchQuery === '' || 
-            item.order_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.manufacturer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.purchaser.toLowerCase().includes(searchQuery.toLowerCase())
-        ).filter(item => 
-            statusFilter === 'all' || 
-            item.status === statusFilter
-        );
-
-        if (filteredData.length === 0) return renderEmptyState();
-        return (
-            <table className='w-full border-collapse'>
-                <thead>
-                    <tr>
-                        <th className={thClass}>采购单号</th>
-                        <th className={thClass}>采购日期</th>
-                        <th className={thClass}>企业名称</th>
-                        <th className={thClass}>总金额</th>
-                        <th className={thClass}>采购员</th>
-                        <th className={thClass}>状态</th>
-                        <th className={thClass + " text-center"}>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredData.map((item) => (
-                        <tr key={item.order_no} className={trClass}>
-                            <td className={tdClass}><code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{item.order_no}</code></td>
-                            <td className={tdClass}>{formatDate(item.order_date)}</td>
-                            <td className={tdClass}><span className="font-medium text-slate-800 dark:text-slate-100">{item.manufacturer_name}</span></td>
-                            <td className={tdClass}><span className="inline-flex items-center gap-1 font-bold text-teal-600 dark:text-teal-400"><span className="text-xs opacity-60">¥</span>{formatCurrency(item.total_amount)}</span></td>
-                            <td className={tdClass}>{item.purchaser}</td>
-                            <td className={tdClass}><StatusBadge status={item.status} /></td>
-                            <td className={tdClass + " text-center"}><ActionButton onClick={() => handleViewDetail(item)} /></td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        );
-    };
-
-    const renderSalesTable = () => {
-        const filteredData = salesOrders.filter(item => 
-            searchQuery === '' || 
-            item.order_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.institution_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.salesperson.toLowerCase().includes(searchQuery.toLowerCase())
-        ).filter(item => 
-            statusFilter === 'all' || 
-            item.status === statusFilter
-        );
-
-        if (filteredData.length === 0) return renderEmptyState();
-        return (
-            <table className='w-full border-collapse'>
-                <thead>
-                    <tr>
-                        <th className={thClass}>销售单号</th>
-                        <th className={thClass}>销售日期</th>
-                        <th className={thClass}>机构名称</th>
-                        <th className={thClass}>总金额</th>
-                        <th className={thClass}>销售员</th>
-                        <th className={thClass}>状态</th>
-                        <th className={thClass + " text-center"}>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredData.map((item) => (
-                        <tr key={item.order_no} className={trClass}>
-                            <td className={tdClass}><code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{item.order_no}</code></td>
-                            <td className={tdClass}>{formatDate(item.sales_date)}</td>
-                            <td className={tdClass}><span className="font-medium text-slate-800 dark:text-slate-100">{item.institution_name}</span></td>
-                            <td className={tdClass}><span className="inline-flex items-center gap-1 font-bold text-teal-600 dark:text-teal-400"><span className="text-xs opacity-60">¥</span>{formatCurrency(item.total_amount)}</span></td>
-                            <td className={tdClass}>{item.salesperson}</td>
-                            <td className={tdClass}><StatusBadge status={item.status} /></td>
-                            <td className={tdClass + " text-center"}><ActionButton onClick={() => handleViewDetail(item)} /></td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        );
-    };
-
-    const renderPurchaseStorageTable = () => {
-        const filteredData = purchaseStorages.filter(item => 
-            searchQuery === '' || 
-            item.orderNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.drug_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.warehouse_code.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-
-        if (filteredData.length === 0) return renderEmptyState();
-        return (
-            <table className='w-full border-collapse'>
-                <thead>
-                    <tr>
-                        <th className={thClass}>仓号</th>
-                        <th className={thClass}>货位号</th>
-                        <th className={thClass}>采购单号</th>
-                        <th className={thClass}>入库日期</th>
-                        <th className={thClass}>药品名称</th>
-                        <th className={thClass}>入库数量</th>
-                        <th className={thClass + " text-center"}>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredData.map((item) => (
-                        <tr key={item.id} className={trClass}>
-                            <td className={tdClass}><code className='text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded font-mono'>{item.warehouse_code}</code></td>
-                            <td className={tdClass}>{item.location_code}</td>
-                            <td className={tdClass}><code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{item.orderNo}</code></td>
-                            <td className={tdClass}>{formatDate(item.storage_date)}</td>
-                            <td className={tdClass}><span className="font-medium text-slate-800 dark:text-slate-100">{item.drug_name}</span></td>
-                            <td className={tdClass}><span className="font-bold text-teal-600 dark:text-teal-400">{item.quantity}</span></td>
-                            <td className={tdClass + " text-center"}><ActionButton onClick={() => handleViewDetail(item)} /></td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        );
-    };
-
-    const renderSalesOutboundTable = () => {
-        const filteredData = salesOutbounds.filter(item => 
-            searchQuery === '' || 
-            item.orderNo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.drug_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.warehouse_code.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-
-        if (filteredData.length === 0) return renderEmptyState();
-        return (
-            <table className='w-full border-collapse'>
-                <thead>
-                    <tr>
-                        <th className={thClass}>仓号</th>
-                        <th className={thClass}>货位号</th>
-                        <th className={thClass}>销售单号</th>
-                        <th className={thClass}>出库日期</th>
-                        <th className={thClass}>药品名称</th>
-                        <th className={thClass}>出库数量</th>
-                        <th className={thClass + " text-center"}>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredData.map((item) => (
-                        <tr key={item.id} className={trClass}>
-                            <td className={tdClass}><code className='text-xs bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded font-mono'>{item.warehouse_code}</code></td>
-                            <td className={tdClass}>{item.location_code}</td>
-                            <td className={tdClass}><code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{item.orderNo}</code></td>
-                            <td className={tdClass}>{formatDate(item.outbound_date)}</td>
-                            <td className={tdClass}><span className="font-medium text-slate-800 dark:text-slate-100">{item.drug_name}</span></td>
-                            <td className={tdClass}><span className="font-bold text-teal-600 dark:text-teal-400">{item.quantity}</span></td>
-                            <td className={tdClass + " text-center"}><ActionButton onClick={() => handleViewDetail(item)} /></td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
-        );
-    };
-
-    const renderInventoryTable = () => {
-        const filteredData = inventory.filter(item => 
-            searchQuery === '' || 
-            item.drug_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.batch_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.warehouse_code.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-
-        if (filteredData.length === 0) return renderEmptyState();
-        return (
-            <table className='w-full border-collapse'>
-                <thead>
-                    <tr>
-                        <th className={thClass}>仓号</th>
-                        <th className={thClass}>货位号</th>
-                        <th className={thClass}>批次号</th>
-                        <th className={thClass}>药品名称</th>
-                        <th className={thClass}>库存数量</th>
-                        <th className={thClass}>最后更新</th>
-                        <th className={thClass + " text-center"}>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredData.map((item) => (
-                        <tr key={item.id} className={trClass}>
-                            <td className={tdClass}><code className='text-xs bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded font-mono'>{item.warehouse_code}</code></td>
-                            <td className={tdClass}>{item.location_code}</td>
-                            <td className={tdClass}><code className='text-xs bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-slate-500 dark:text-slate-400 font-mono'>{item.batch_no}</code></td>
-                            <td className={tdClass}><span className="font-medium text-slate-800 dark:text-slate-100">{item.drug_name}</span></td>
-                            <td className={tdClass}>
-                                <span className='inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/30 text-teal-700 dark:text-teal-300 font-bold text-sm'>
-                                    {item.quantity}
-                                    <Sparkles className='w-3 h-3 opacity-50' />
-                                </span>
-                            </td>
-                            <td className={tdClass}>{formatDate(item.last_update)}</td>
-                            <td className={tdClass + " text-center"}><ActionButton onClick={() => handleViewDetail(item)} /></td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+            <VirtualTable
+                key={activeReport}
+                columns={columns}
+                data={filteredData}
+                rowKey={rowKey}
+                onRowClick={handleViewDetail}
+                thClass={thClass}
+                tdClass={tdClass}
+                trClass={trClass}
+            />
         );
     };
 
@@ -881,7 +640,7 @@ export default function ReportsPage() {
                             <p className='text-[11px] text-slate-400 dark:text-slate-500'>{REPORT_CONFIG[activeReport].description}</p>
                         </div>
                     </div>
-                    
+
                     {/* 筛选区域 */}
                     <div className='hidden md:flex items-center gap-3'>
                         {renderFilters()}
@@ -910,11 +669,11 @@ export default function ReportsPage() {
                                             ? ''
                                             : ''}
                                     `}
-                                    style={isActive ? {
-                                        backgroundImage: `linear-gradient(135deg, ${config.color}20, ${config.color}30)`,
-                                        color: config.color,
-                                        boxShadow: `0 2px 8px ${config.color}18`
-                                    } : { color: '#94a3b8', background: 'rgba(148, 163, 184, 0.08)' }}
+                                        style={isActive ? {
+                                            backgroundImage: `linear-gradient(135deg, ${config.color}20, ${config.color}30)`,
+                                            color: config.color,
+                                            boxShadow: `0 2px 8px ${config.color}18`
+                                        } : { color: '#94a3b8', background: 'rgba(148, 163, 184, 0.08)' }}
                                     >
                                         {config.icon}
                                     </span>
@@ -974,7 +733,7 @@ export default function ReportsPage() {
                         </Button>
                     </div>
                 </CardHeader>
-                
+
                 <CardContent className='p-0 overflow-hidden flex-1 relative flex flex-col'>
                     {error ? (
                         <div className='flex flex-col items-center justify-center h-64 gap-4 mx-4 my-6 rounded-2xl bg-gradient-to-br from-red-50/80 to-orange-50/40 dark:from-red-950/20 dark:to-orange-950/10 border border-red-100/60 dark:border-red-900/20'>
@@ -991,7 +750,7 @@ export default function ReportsPage() {
                     ) : loading ? (
                         renderLoadingState()
                     ) : (
-                        <div className='flex-1 overflow-auto report-tab-enter' style={{ contain: 'strict' }}>
+                        <div className='flex-1 report-tab-enter'>
                             {renderTable()}
                         </div>
                     )}
@@ -1018,11 +777,11 @@ export default function ReportsPage() {
                         </DialogHeader>
                         <div className='absolute bottom-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-slate-200/60 to-transparent dark:via-slate-700/40'></div>
                     </div>
-                    
+
                     <div className="p-6 max-h-[65vh] overflow-y-auto">
                         {renderDetailContent()}
                     </div>
-                    
+
                     {/* 底部装饰线 */}
                     <div className='px-6 pb-4'>
                         <div className='h-px bg-gradient-to-r from-transparent via-teal-200/30 to-transparent dark:via-teal-800/20'></div>

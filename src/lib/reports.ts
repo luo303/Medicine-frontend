@@ -1,30 +1,4 @@
-import axios from "axios";
-
-// 后端 NestJS 服务地址（根据实际部署情况修改）
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
-
-// 获取 token
-function getToken() {
-  return localStorage.getItem("auth_token");
-}
-
-// 创建 axios 实例
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-// 请求拦截器，添加 token
-apiClient.interceptors.request.use((config) => {
-  const token = getToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
+import { apiClient } from "@/app/api/_services/axios";
 
 // ==================== 数据类型定义 ====================
 

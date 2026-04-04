@@ -46,6 +46,18 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
+@layer utilities {
+  .scrollbar-invisible {
+    scrollbar-color: transparent transparent;
+  }
+  .scrollbar-invisible::-webkit-scrollbar-thumb {
+    background: transparent !important;
+  }
+  .scrollbar-invisible::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+}
+
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);

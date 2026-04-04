@@ -47,14 +47,30 @@ apiClient.interceptors.request.use(
 );
 
 /**
- * 响应拦截器 - 统一处理错误
+ * 响应拦截器 - 统一处理错误，未授权时重定向到登录页
  */
 apiClient.interceptors.response.use(
   (response) => {
     return response;
   },
   (error) => {
-    console.error("API 请求错误:", error.response?.status || error.message);
+    const status = error.response?.status;
+
+    if (status === 401) {
+      console.warn("认证已过期或未登录 (401)，跳转至登录页");
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("auth_token");
+        window.location.href = "/login";
+      }
+      return Promise.reject(error);
+    }
+
+    if (!status && error.message === "Network Error") {
+      console.error("网络连接失败，请检查服务是否正常运行");
+    } else if (status >= 500) {
+      console.error(`服务器错误 (${status})`);
+    }
+
     return Promise.reject(error);
   },
 );
