@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState, useEffect } from 'react';
+import { memo, useState, useEffect, useRef } from 'react';
 import { List, type RowComponentProps } from 'react-window';
 
 export interface ColumnDef<T = any> {
@@ -79,11 +79,42 @@ function VirtualTableInner<T extends Record<string, any>>({
 }: VirtualTableProps<T>) {
     const [mounted, setMounted] = useState(false);
     const [listHeight, setListHeight] = useState(400);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setMounted(true);
-        setListHeight(Math.max(window.innerHeight - 320, 300));
     }, []);
+
+    useEffect(() => {
+        if (!containerRef.current) return;
+
+        const updateHeight = () => {
+            if (containerRef.current) {
+                const parent = containerRef.current.parentElement;
+                if (parent) {
+                    const rect = parent.getBoundingClientRect();
+                    const headerHeight = 45;
+                    const height = rect.height - headerHeight;
+                    setListHeight(Math.max(height, 200));
+                }
+            }
+        };
+
+        updateHeight();
+
+        const resizeObserver = new ResizeObserver(() => {
+            updateHeight();
+        });
+
+        resizeObserver.observe(containerRef.current);
+
+        window.addEventListener('resize', updateHeight);
+
+        return () => {
+            resizeObserver.disconnect();
+            window.removeEventListener('resize', updateHeight);
+        };
+    }, [mounted]);
 
     if (data.length === 0) return null;
 
@@ -97,12 +128,10 @@ function VirtualTableInner<T extends Record<string, any>>({
         trClass ||
         'border-b border-slate-100/60 dark:border-slate-800/40 transition-all duration-150 hover:bg-teal-50/80 dark:hover:bg-teal-950/25 report-row-enter';
 
-    // 确保 rowHeight 是 number 类型
     const numericRowHeight = typeof rowHeight === 'number' ? rowHeight : ROW_HEIGHT;
 
     return (
-        <div className={`w-full flex flex-col ${className || ''}`}>
-            {/* 表头 */}
+        <div ref={containerRef} className={`w-full h-full flex flex-col ${className || ''}`}>
             <div className={`flex flex-row bg-slate-50/95 dark:bg-slate-800/95 overflow-y-scroll scrollbar-invisible`}>
                 <div className='grow flex flex-row items-center gap-2 px-2 py-1'>
                     {columns.map((col) => (
@@ -113,12 +142,11 @@ function VirtualTableInner<T extends Record<string, any>>({
                 </div>
             </div>
 
-            {/* 数据体：虚拟列表 */}
             {mounted && (
-                <div className='overflow-hidden' style={{ height: listHeight }}>
+                <div className='flex-1 overflow-hidden'>
                     <List
                         className="scrollbar-custom"
-                        style={{ overflowY: 'scroll' }}
+                        style={{ overflowY: 'scroll', height: listHeight }}
                         rowComponent={MemoVirtualRow}
                         rowCount={data.length}
                         rowHeight={numericRowHeight}
