@@ -57,7 +57,7 @@ export default function ChatPanel() {
         setInput('');
 
         try {
-            const res = await fetch('http://localhost:3000/api/ai/chat/stream', {
+            const res = await fetch('http://localhost:3001/api/ai/chat/stream', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
