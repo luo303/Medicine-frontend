@@ -22,7 +22,7 @@ interface NavItem {
 export default function SideNav() {
     const pathname = usePathname();
     const { collapsed, toggle } = useNavStore();
-    const [expandedMenus, setExpandedMenus] = useState<string[]>(['/basic-data']);
+    const [expandedMenus, setExpandedMenus] = useState<string[]>([]);
 
     const navItems: NavItem[] = [
         { href: '/home', label: '仪表盘', icon: (
@@ -57,6 +57,21 @@ export default function SideNav() {
                 { href: '/basic-data/drugs', label: '药品目录' },
                 { href: '/basic-data/institutions', label: '医疗机构' },
                 { href: '/basic-data/warehouses', label: '仓库管理' },
+            ]
+        },
+        {
+            label: '采购管理',
+            icon: (
+                <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={1.5} d='M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z' />
+                </svg>
+            ),
+            children: [
+                { href: '/purchase/orders', label: '采购单列表' },
+                { href: '/purchase/new-order', label: '新增采购单' },
+                { href: '/purchase/storage', label: '采购入库' },
+                { href: '/purchase/return', label: '采购退货' },
+                { href: '/purchase/report', label: '采购报表' },
             ]
         },
     ];

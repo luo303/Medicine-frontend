@@ -3,16 +3,6 @@
  * 负责各报表类型的表头配置和原始数据到 Excel 行数据的映射
  */
 
-import {
-  type Manufacturer,
-  type Drug,
-  type MedicalInstitution,
-  type PurchaseOrder,
-  type SalesOrder,
-  type PurchaseStorage,
-  type SalesOutbound,
-  type Inventory,
-} from "@/lib/reports";
 
 export type ReportType =
   | "manufacturer"
