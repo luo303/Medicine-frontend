@@ -22,7 +22,9 @@ export type ReportType =
   | "sales"
   | "purchase_storage"
   | "sales_outbound"
-  | "inventory";
+  | "inventory"
+  | "warehouse"
+  | "storage_location";
 
 export interface ExportColumnDef {
   key: string;
@@ -96,6 +98,18 @@ export const COLUMN_DEFS: Record<ReportType, ExportColumnDef[]> = {
     { key: "drug_name", label: "药品名称" },
     { key: "quantity", label: "库存数量" },
     { key: "last_update", label: "最后更新" },
+  ],
+  warehouse: [
+    { key: "code", label: "仓库编号" },
+    { key: "name", label: "仓库名称" },
+    { key: "address", label: "地址" },
+    { key: "manager", label: "负责人" },
+  ],
+  storage_location: [
+    { key: "code", label: "货位编号" },
+    { key: "warehouseId", label: "仓库ID" },
+    { key: "description", label: "描述" },
+    { key: "capacity", label: "容量" },
   ],
 };
 

@@ -1,11 +1,13 @@
 'use client';
 
-import { memo, useState, useEffect, useRef } from 'react';
+import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { List, type RowComponentProps } from 'react-window';
 
 export interface ColumnDef<T = any> {
     key: string;
     label: string;
+    width?: string | number;
+    align?: 'left' | 'center' | 'right';
     render?: (value: any, item: T, index: number) => React.ReactNode;
 }
 
@@ -14,47 +16,64 @@ interface VirtualTableProps<T = any> {
     data: T[];
     rowKey: (item: T) => string | number;
     onRowClick?: (item: T) => void;
-    className?: string;
-    thClass?: string;
-    tdClass?: string;
-    trClass?: string;
+    emptyText?: string;
     rowHeight?: number;
+    headerHeight?: number;
+    showRecordCount?: boolean;
 }
 
-const ROW_HEIGHT = 52;
+const DEFAULT_ROW_HEIGHT = 52;
+const DEFAULT_HEADER_HEIGHT = 48;
 
-function VirtualRow<T>({
+function VirtualRowInner<T>({
     index,
     style,
     columns,
     data,
     onRowClick,
-    tdClass,
-    trClass,
-    ariaAttributes,
+    rowHeight,
 }: RowComponentProps<{
     columns: ColumnDef<T>[];
     data: T[];
     onRowClick?: (item: T) => void;
-    tdClass: string;
-    trClass: string;
-}> & { ariaAttributes?: any }) {
+    rowHeight: number;
+}>) {
     const item = data[index];
     if (!item) return null;
 
+    const getAlignClass = (align?: 'left' | 'center' | 'right') => {
+        switch (align) {
+            case 'center': return 'justify-center text-center';
+            case 'right': return 'justify-end text-right';
+            default: return 'justify-start text-left';
+        }
+    };
+
     return (
-        <div style={{ ...style, position: 'absolute' }} {...ariaAttributes}>
+        <div
+            style={{ ...style, position: 'absolute' }}
+            className="border-b border-slate-100/60 dark:border-slate-800/40 hover:bg-teal-50/80 dark:hover:bg-teal-950/25 transition-colors"
+        >
             <div
                 role="row"
-                className={`${trClass} flex flex-row items-center gap-2 px-2 w-full h-full`}
+                className="flex items-center h-full px-4 cursor-pointer"
                 onClick={onRowClick ? () => onRowClick(item) : undefined}
             >
                 {columns.map((col) => {
                     const value = (item as Record<string, any>)[col.key];
+                    const widthStyle = col.width 
+                        ? { width: typeof col.width === 'number' ? `${col.width}px` : col.width, flexShrink: 0 }
+                        : { flex: 1, minWidth: 0 };
+                    
                     return (
-                        <div key={col.key} role="cell" className={`${tdClass} flex-1 min-w-0 flex items-center`}>
-                            <div className="w-full truncate">
-                                {col.render ? col.render(value, item, index) : value ?? ''}
+                        <div
+                            key={col.key}
+                            role="cell"
+                            style={widthStyle}
+                            className={`flex items-center h-full px-2 ${getAlignClass(col.align)}`}
+                        >
+                            <div className="w-full truncate text-[13px] text-slate-800 dark:text-slate-200">
+                                {col.render ? col.render(value, item, index) : value ?? '-'}
                             </div>
                         </div>
                     );
@@ -64,22 +83,21 @@ function VirtualRow<T>({
     );
 }
 
-const MemoVirtualRow = memo(VirtualRow) as typeof VirtualRow;
+const VirtualRow = memo(VirtualRowInner) as typeof VirtualRowInner;
 
 function VirtualTableInner<T extends Record<string, any>>({
     columns,
     data,
     rowKey,
     onRowClick,
-    className,
-    thClass,
-    tdClass,
-    trClass,
-    rowHeight = ROW_HEIGHT,
+    emptyText = '暂无数据',
+    rowHeight = DEFAULT_ROW_HEIGHT,
+    headerHeight = DEFAULT_HEADER_HEIGHT,
+    showRecordCount = true,
 }: VirtualTableProps<T>) {
-    const [mounted, setMounted] = useState(false);
-    const [listHeight, setListHeight] = useState(400);
     const containerRef = useRef<HTMLDivElement>(null);
+    const [listHeight, setListHeight] = useState(400);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -93,8 +111,7 @@ function VirtualTableInner<T extends Record<string, any>>({
                 const parent = containerRef.current.parentElement;
                 if (parent) {
                     const rect = parent.getBoundingClientRect();
-                    const headerHeight = 45;
-                    const height = rect.height - headerHeight;
+                    const height = rect.height - headerHeight - (showRecordCount ? 40 : 0);
                     setListHeight(Math.max(height, 200));
                 }
             }
@@ -103,62 +120,102 @@ function VirtualTableInner<T extends Record<string, any>>({
         updateHeight();
 
         const resizeObserver = new ResizeObserver(() => {
-            updateHeight();
+            requestAnimationFrame(updateHeight);
         });
 
         resizeObserver.observe(containerRef.current);
 
-        window.addEventListener('resize', updateHeight);
-
         return () => {
             resizeObserver.disconnect();
-            window.removeEventListener('resize', updateHeight);
         };
-    }, [mounted]);
+    }, [headerHeight, showRecordCount]);
 
-    if (data.length === 0) return null;
+    const getAlignClass = useCallback((align?: 'left' | 'center' | 'right') => {
+        switch (align) {
+            case 'center': return 'justify-center text-center';
+            case 'right': return 'justify-end text-right';
+            default: return 'justify-start text-left';
+        }
+    }, []);
 
-    const defaultThClass =
-        thClass ||
-        'px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50/95 dark:bg-slate-800/95 whitespace-nowrap border-slate-200 dark:border-slate-700/60 sticky top-0 z-20 backdrop-blur-sm';
-    const defaultTdClass =
-        tdClass ||
-        'px-4 py-3 text-[13px] text-slate-800 dark:text-slate-200 whitespace-nowrap';
-    const defaultTrClass =
-        trClass ||
-        'border-b border-slate-100/60 dark:border-slate-800/40 transition-all duration-150 hover:bg-teal-50/80 dark:hover:bg-teal-950/25 report-row-enter';
-
-    const numericRowHeight = typeof rowHeight === 'number' ? rowHeight : ROW_HEIGHT;
+    if (data.length === 0) {
+        return (
+            <div className="flex flex-col h-full">
+                <div className="flex items-center h-12 px-4 bg-slate-50/95 dark:bg-slate-800/95 border-b border-slate-200/60 dark:border-slate-700/40">
+                    {columns.map((col) => {
+                        const widthStyle = col.width 
+                            ? { width: typeof col.width === 'number' ? `${col.width}px` : col.width, flexShrink: 0 }
+                            : { flex: 1, minWidth: 0 };
+                        
+                        return (
+                            <div
+                                key={col.key}
+                                style={widthStyle}
+                                className={`flex items-center h-full px-2 ${getAlignClass(col.align)}`}
+                            >
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                    {col.label}
+                                </span>
+                            </div>
+                        );
+                    })}
+                </div>
+                <div className="flex-1 flex items-center justify-center text-slate-500 dark:text-slate-400">
+                    {emptyText}
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div ref={containerRef} className={`w-full h-full flex flex-col ${className || ''}`}>
-            <div className={`flex flex-row bg-slate-50/95 dark:bg-slate-800/95 overflow-y-scroll scrollbar-invisible`}>
-                <div className='grow flex flex-row items-center gap-2 px-2 py-1'>
-                    {columns.map((col) => (
-                        <div key={col.key} className={`${defaultThClass} flex-1 min-w-0 truncate`}>
-                            {col.label}
+        <div ref={containerRef} className="flex flex-col h-full">
+            <div 
+                className="flex items-center border-b border-slate-200/60 dark:border-slate-700/40 bg-slate-50/95 dark:bg-slate-800/95"
+                style={{ height: headerHeight }}
+            >
+                {columns.map((col) => {
+                    const widthStyle = col.width 
+                        ? { width: typeof col.width === 'number' ? `${col.width}px` : col.width, flexShrink: 0 }
+                        : { flex: 1, minWidth: 0 };
+                    
+                    return (
+                        <div
+                            key={col.key}
+                            style={widthStyle}
+                            className={`flex items-center h-full px-4 ${getAlignClass(col.align)}`}
+                        >
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                                {col.label}
+                            </span>
                         </div>
-                    ))}
-                </div>
+                    );
+                })}
             </div>
 
             {mounted && (
-                <div className='flex-1 overflow-hidden'>
+                <div className="flex-1">
                     <List
-                        className="scrollbar-custom"
-                        style={{ overflowY: 'scroll', height: listHeight }}
-                        rowComponent={MemoVirtualRow}
+                        className="scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"
+                        style={{ height: listHeight, width: '100%' }}
                         rowCount={data.length}
-                        rowHeight={numericRowHeight}
+                        rowHeight={rowHeight}
+                        rowComponent={VirtualRow as any}
                         rowProps={{
                             columns,
                             data,
                             onRowClick,
-                            tdClass: defaultTdClass,
-                            trClass: defaultTrClass,
+                            rowHeight,
                         }}
-                        overscanCount={8}
+                        overscanCount={10}
                     />
+                </div>
+            )}
+
+            {showRecordCount && (
+                <div className="flex items-center h-10 px-4 border-t border-slate-200/60 dark:border-slate-700/40 bg-slate-50/50 dark:bg-slate-800/50">
+                    <span className="text-sm text-slate-500 dark:text-slate-400">
+                        共 <span className="font-medium text-slate-700 dark:text-slate-300">{data.length}</span> 条记录
+                    </span>
                 </div>
             )}
         </div>

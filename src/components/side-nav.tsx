@@ -1,15 +1,30 @@
 'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useNavStore } from '@/store/nav-store';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+
+interface NavItem {
+    href?: string;
+    label: string;
+    icon: React.ReactNode;
+    children?: { href: string; label: string }[];
+}
 
 export default function SideNav() {
     const pathname = usePathname();
     const { collapsed, toggle } = useNavStore();
-    
-    const navItems = [
+    const [expandedMenus, setExpandedMenus] = useState<string[]>(['/basic-data']);
+
+    const navItems: NavItem[] = [
         { href: '/home', label: '仪表盘', icon: (
             <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                 <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={1.5} d='M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' />
@@ -30,7 +45,33 @@ export default function SideNav() {
                 <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={1.5} d='M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79 8-4' />
             </svg>
         )},
+        {
+            label: '基础数据',
+            icon: (
+                <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={1.5} d='M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' />
+                </svg>
+            ),
+            children: [
+                { href: '/basic-data/manufacturers', label: '生产企业' },
+                { href: '/basic-data/drugs', label: '药品目录' },
+                { href: '/basic-data/institutions', label: '医疗机构' },
+                { href: '/basic-data/warehouses', label: '仓库管理' },
+            ]
+        },
     ];
+
+    const toggleMenu = (label: string) => {
+        setExpandedMenus(prev => 
+            prev.includes(label) 
+                ? prev.filter(m => m !== label)
+                : [...prev, label]
+        );
+    };
+
+    const isChildActive = (children: { href: string }[]) => {
+        return children.some(child => pathname === child.href);
+    };
 
     return (
         <div className={cn(
@@ -38,13 +79,9 @@ export default function SideNav() {
             'transition-[width] duration-300 ease-in-out',
             collapsed ? 'w-[68px]' : 'w-[240px]'
         )}>
-            {/* 背景层 */}
             <div className='absolute inset-0 bg-slate-50/95 dark:bg-slate-900/98 backdrop-blur-xl' />
-            
-            {/* 右侧装饰线 */}
             <div className='absolute top-0 right-0 bottom-0 w-px bg-gradient-to-b from-transparent via-teal-200/30 dark:via-teal-800/20 to-transparent' />
 
-            {/* Logo 区域 */}
             <div className={cn(
                 'relative p-4 pb-3 border-b border-slate-200/60 dark:border-slate-700/40',
                 'transition-all duration-300 ease-in-out'
@@ -66,7 +103,6 @@ export default function SideNav() {
                         </div>
                     </div>
 
-                    {/* 折叠按钮 */}
                     <Button
                         onClick={toggle}
                         variant="ghost"
@@ -87,14 +123,93 @@ export default function SideNav() {
                 </div>
             </div>
             
-            {/* 导航菜单 */}
             <nav className='relative flex-1 p-2.5 space-y-1 overflow-y-auto'>
                 {navItems.map((item) => {
+                    if (item.children) {
+                        const isExpanded = expandedMenus.includes(item.label);
+                        const hasActiveChild = isChildActive(item.children);
+
+                        return (
+                            <Collapsible
+                                key={item.label}
+                                open={isExpanded}
+                                onOpenChange={() => toggleMenu(item.label)}
+                                className="space-y-1"
+                            >
+                                <CollapsibleTrigger asChild>
+                                    <button
+                                        className={cn(
+                                            'group relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium',
+                                            'transition-all duration-200 cursor-pointer',
+                                            hasActiveChild
+                                                ? 'text-teal-700 dark:text-teal-300 bg-gradient-to-r from-teal-50 to-cyan-50/50 dark:from-teal-950/30 dark:to-cyan-950/15 shadow-sm'
+                                                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-slate-800/50'
+                                        )}
+                                    >
+                                        {hasActiveChild && (
+                                            <span className='absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-gradient-to-b from-teal-400 to-cyan-400 shadow-sm' />
+                                        )}
+                                        <span className={cn(
+                                            'shrink-0 flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200',
+                                            hasActiveChild 
+                                                ? 'bg-white dark:bg-slate-800 shadow-sm' 
+                                                : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 group-hover:bg-slate-50 dark:group-hover:bg-slate-800/50'
+                                        )}>
+                                            {item.icon}
+                                        </span>
+                                        <span className={cn(
+                                            'flex-1 text-left overflow-hidden whitespace-nowrap transition-all duration-300',
+                                            collapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
+                                        )}>
+                                            {item.label}
+                                        </span>
+                                        {!collapsed && (
+                                            <svg
+                                                className={cn(
+                                                    'w-4 h-4 text-slate-400 transition-transform duration-200',
+                                                    isExpanded ? 'rotate-90' : ''
+                                                )}
+                                                fill='none'
+                                                stroke='currentColor'
+                                                viewBox='0 0 24 24'
+                                            >
+                                                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M9 5l7 7-7 7' />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className="space-y-1">
+                                    {!collapsed && item.children.map((child) => {
+                                        const isActive = pathname === child.href;
+                                        return (
+                                            <Link
+                                                key={child.href}
+                                                href={child.href}
+                                                className={cn(
+                                                    'group relative flex items-center gap-3 pl-14 pr-3 py-2 rounded-lg text-sm',
+                                                    'transition-all duration-200 cursor-pointer',
+                                                    isActive
+                                                        ? 'text-teal-600 dark:text-teal-400 bg-teal-50/50 dark:bg-teal-900/20'
+                                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100/50 dark:hover:bg-slate-800/30'
+                                                )}
+                                            >
+                                                {isActive && (
+                                                    <span className='absolute left-10 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-teal-400' />
+                                                )}
+                                                {child.label}
+                                            </Link>
+                                        );
+                                    })}
+                                </CollapsibleContent>
+                            </Collapsible>
+                        );
+                    }
+
                     const isActive = pathname === item.href;
                     return (
                         <Link
                             key={item.href}
-                            href={item.href}
+                            href={item.href!}
                             className={cn(
                                 'group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium',
                                 'transition-all duration-200 cursor-pointer',
@@ -103,12 +218,9 @@ export default function SideNav() {
                                     : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/80 dark:hover:bg-slate-800/50'
                             )}
                         >
-                            {/* 活跃指示条 */}
                             {isActive && (
                                 <span className='absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-gradient-to-b from-teal-400 to-cyan-400 shadow-sm' />
                             )}
-
-                            {/* 图标容器 */}
                             <span className={cn(
                                 'shrink-0 flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200',
                                 isActive 
@@ -117,16 +229,12 @@ export default function SideNav() {
                             )}>
                                 {item.icon}
                             </span>
-
-                            {/* 标签文字 */}
                             <span className={cn(
                                 'overflow-hidden whitespace-nowrap transition-all duration-300',
                                 collapsed ? 'w-0 opacity-0' : 'w-auto opacity-100'
                             )}>
                                 {item.label}
                             </span>
-
-                            {/* 活跃状态光晕 */}
                             {isActive && !collapsed && (
                                 <span className='absolute right-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse' />
                             )}
@@ -135,7 +243,6 @@ export default function SideNav() {
                 })}
             </nav>
             
-            {/* 底部区域 */}
             <div className={cn(
                 'relative p-3 pt-2 border-t border-slate-200/60 dark:border-slate-700/40',
                 'transition-all duration-300 ease-in-out',

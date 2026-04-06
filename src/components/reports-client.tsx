@@ -44,10 +44,6 @@ const REPORT_CONFIG: Record<ReportType, { label: string; icon: React.ReactNode; 
     inventory: { label: '企业药品库存表', icon: <ClipboardList className="w-4.5 h-4.5" />, description: '实时监控各仓库的药品库存余量、批次及效期状态', color: '#ca8a04' },
 };
 
-const thClass = "px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 bg-slate-50/95 dark:bg-slate-800/95 whitespace-nowrap border-b border-slate-200 dark:border-slate-700/60 sticky top-0 z-20 backdrop-blur-sm";
-const tdClass = "px-4 py-3 text-[13px] text-slate-800 dark:text-slate-200 whitespace-nowrap";
-const trClass = "border-b border-slate-100/60 dark:border-slate-800/40 transition-all duration-150 hover:bg-teal-50/80 dark:hover:bg-teal-950/25 report-row-enter";
-
 const DetailItem = ({ label, value }: { label: string; value: React.ReactNode }) => (
     <div className='group relative overflow-hidden rounded-xl bg-gradient-to-br from-slate-50/90 to-white/60 dark:from-slate-800/60 dark:to-slate-900/40 p-4 border border-slate-100/80 dark:border-slate-700/30 transition-all duration-300 hover:border-teal-200/60 dark:hover:border-teal-800/30 hover:shadow-md hover:shadow-teal-500/5'>
         <div className='absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-teal-300/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500'></div>
@@ -514,9 +510,6 @@ export default function ReportsClient({ initialData }: ReportsClientProps) {
                             data={filteredData}
                             rowKey={rowKey}
                             onRowClick={handleViewDetail}
-                            thClass={thClass}
-                            tdClass={tdClass}
-                            trClass={trClass}
                         />
                     )}
                 </div>
