@@ -1,7 +1,6 @@
 "use cache";
 import { cacheLife } from "next/cache";
-
-const API_BASE_URL = "http://localhost:3001/api";
+import { API_BASE_URL } from "./api-config";
 
 interface ApiResponse<T> {
   code: number;

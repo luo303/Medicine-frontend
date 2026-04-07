@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -19,17 +20,39 @@ import {
 } from '@/components/ui/select';
 import { VirtualTable, type ColumnDef } from '@/components/virtual-table';
 import { exportToExcel } from '@/lib/excel-export';
+import { revalidateCache } from '@/lib/cache-client';
+import { 
+    createMedicalInstitution, 
+    updateMedicalInstitution, 
+    deleteMedicalInstitution,
+    type CreateMedicalInstitutionParams,
+    type UpdateMedicalInstitutionParams,
+} from '@/lib/api-client';
 import type { MedicalInstitution } from '@/types/basic-data';
+import { Loader2 } from 'lucide-react';
 
 interface InstitutionsClientProps {
     institutions: MedicalInstitution[];
 }
 
 export default function InstitutionsClient({ institutions }: InstitutionsClientProps) {
+    const router = useRouter();
     const [searchName, setSearchName] = useState('');
     const [selectedType, setSelectedType] = useState('全部');
     const [dialogOpen, setDialogOpen] = useState(false);
     const [exporting, setExporting] = useState(false);
+    const [editingInstitution, setEditingInstitution] = useState<MedicalInstitution | null>(null);
+    const [saving, setSaving] = useState(false);
+    const [deleting, setDeleting] = useState<string | null>(null);
+
+    const [formData, setFormData] = useState<CreateMedicalInstitutionParams>({
+        approval_no: '',
+        name: '',
+        address: '',
+        postal_code: '',
+        phone: '',
+        is_specialized: false,
+    });
 
     const filteredData = useMemo(() => {
         return institutions.filter(item => {
@@ -40,6 +63,84 @@ export default function InstitutionsClient({ institutions }: InstitutionsClientP
             return matchName && matchType;
         });
     }, [institutions, searchName, selectedType]);
+
+    const resetForm = () => {
+        setFormData({
+            approval_no: '',
+            name: '',
+            address: '',
+            postal_code: '',
+            phone: '',
+            is_specialized: false,
+        });
+        setEditingInstitution(null);
+    };
+
+    const openCreateDialog = () => {
+        resetForm();
+        setDialogOpen(true);
+    };
+
+    const openEditDialog = (institution: MedicalInstitution) => {
+        setEditingInstitution(institution);
+        setFormData({
+            approval_no: institution.approval_no,
+            name: institution.name,
+            address: institution.address || '',
+            postal_code: institution.postal_code || '',
+            phone: institution.phone || '',
+            is_specialized: institution.is_specialized || false,
+        });
+        setDialogOpen(true);
+    };
+
+    const handleSave = async () => {
+        if (!formData.approval_no || !formData.name) {
+            alert('请填写批准号和机构名称');
+            return;
+        }
+
+        setSaving(true);
+        try {
+            if (editingInstitution) {
+                const updateParams: UpdateMedicalInstitutionParams = {
+                    name: formData.name,
+                    address: formData.address,
+                    postal_code: formData.postal_code,
+                    phone: formData.phone,
+                    is_specialized: formData.is_specialized,
+                };
+                await updateMedicalInstitution(editingInstitution.approval_no, updateParams);
+            } else {
+                await createMedicalInstitution(formData);
+            }
+            await revalidateCache('institutions');
+            setDialogOpen(false);
+            resetForm();
+            router.refresh();
+        } catch (error) {
+            console.error('保存失败:', error);
+            alert('保存失败，请重试');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleDelete = async (approvalNo: string) => {
+        if (!confirm('确定要删除该机构吗？')) return;
+
+        setDeleting(approvalNo);
+        try {
+            await deleteMedicalInstitution(approvalNo);
+            await revalidateCache('institutions');
+            router.refresh();
+        } catch (error) {
+            console.error('删除失败:', error);
+            alert('删除失败，请重试');
+        } finally {
+            setDeleting(null);
+        }
+    };
 
     const handleExport = async () => {
         if (filteredData.length === 0) {
@@ -99,16 +200,29 @@ export default function InstitutionsClient({ institutions }: InstitutionsClientP
             align: 'center',
             render: (_, item) => (
                 <div className="flex items-center justify-center gap-1">
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-teal-600 hover:text-teal-700 hover:bg-teal-50 dark:hover:bg-teal-900/20">
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 px-2 text-teal-600 hover:text-teal-700 hover:bg-teal-50 dark:hover:bg-teal-900/20"
+                        onClick={() => openEditDialog(item)}
+                    >
                         编辑
                     </Button>
-                    <Button variant="ghost" size="sm" className="h-7 px-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20">
-                        删除
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 px-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        onClick={() => handleDelete(item.approval_no)}
+                        disabled={deleting === item.approval_no}
+                    >
+                        {deleting === item.approval_no ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : '删除'}
                     </Button>
                 </div>
             ),
         },
-    ], []);
+    ], [deleting]);
 
     return (
         <div className="flex flex-col h-full p-6 space-y-4">
@@ -119,7 +233,10 @@ export default function InstitutionsClient({ institutions }: InstitutionsClientP
                 </div>
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-md">
+                        <Button 
+                            className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-md"
+                            onClick={openCreateDialog}
+                        >
                             <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                             </svg>
@@ -128,28 +245,61 @@ export default function InstitutionsClient({ institutions }: InstitutionsClientP
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[500px]">
                         <DialogHeader>
-                            <DialogTitle>新增医疗机构</DialogTitle>
+                            <DialogTitle>{editingInstitution ? '编辑医疗机构' : '新增医疗机构'}</DialogTitle>
                         </DialogHeader>
                         <div className="grid gap-4 py-4">
                             <div className="grid grid-cols-4 items-center gap-4">
-                                <label className="text-right text-sm text-slate-600">机构批准号</label>
-                                <Input className="col-span-3" placeholder="请输入批准号" />
+                                <label className="text-right text-sm text-slate-600">机构批准号 <span className="text-red-500">*</span></label>
+                                <Input 
+                                    className="col-span-3" 
+                                    placeholder="请输入批准号"
+                                    value={formData.approval_no}
+                                    onChange={(e) => setFormData({ ...formData, approval_no: e.target.value })}
+                                    disabled={!!editingInstitution}
+                                />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <label className="text-right text-sm text-slate-600">机构名称 <span className="text-red-500">*</span></label>
-                                <Input className="col-span-3" placeholder="请输入机构名称" />
+                                <Input 
+                                    className="col-span-3" 
+                                    placeholder="请输入机构名称"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <label className="text-right text-sm text-slate-600">地址</label>
-                                <Input className="col-span-3" placeholder="请输入详细地址" />
+                                <Input 
+                                    className="col-span-3" 
+                                    placeholder="请输入详细地址"
+                                    value={formData.address}
+                                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <label className="text-right text-sm text-slate-600">邮政编码</label>
+                                <Input 
+                                    className="col-span-3" 
+                                    placeholder="请输入邮政编码"
+                                    value={formData.postal_code}
+                                    onChange={(e) => setFormData({ ...formData, postal_code: e.target.value })}
+                                />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <label className="text-right text-sm text-slate-600">联系电话</label>
-                                <Input className="col-span-3" placeholder="请输入联系电话" />
+                                <Input 
+                                    className="col-span-3" 
+                                    placeholder="请输入联系电话"
+                                    value={formData.phone}
+                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                />
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <label className="text-right text-sm text-slate-600">机构类型</label>
-                                <Select defaultValue="综合">
+                                <Select 
+                                    value={formData.is_specialized ? '专科' : '综合'}
+                                    onValueChange={(value) => setFormData({ ...formData, is_specialized: value === '专科' })}
+                                >
                                     <SelectTrigger className="col-span-3">
                                         <SelectValue />
                                     </SelectTrigger>
@@ -161,8 +311,19 @@ export default function InstitutionsClient({ institutions }: InstitutionsClientP
                             </div>
                         </div>
                         <div className="flex justify-end gap-2">
-                            <Button variant="outline" onClick={() => setDialogOpen(false)}>取消</Button>
-                            <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white">保存</Button>
+                            <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }}>取消</Button>
+                            <Button 
+                                className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white"
+                                onClick={handleSave}
+                                disabled={saving}
+                            >
+                                {saving ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                        保存中...
+                                    </>
+                                ) : '保存'}
+                            </Button>
                         </div>
                     </DialogContent>
                 </Dialog>

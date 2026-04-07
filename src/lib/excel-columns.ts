@@ -15,7 +15,8 @@ export type ReportType =
   | "warehouse"
   | "storage_location"
   | "sales_report"
-  | "purchase_report";
+  | "purchase_report"
+  | "inventory_flow";
 
 export interface ExportColumnDef {
   key: string;
@@ -116,6 +117,15 @@ export const COLUMN_DEFS: Record<ReportType, ExportColumnDef[]> = {
     { key: "purchaseAmount", label: "采购金额(¥)" },
     { key: "storageAmount", label: "入库金额(¥)" },
     { key: "returnAmount", label: "退货金额(¥)" },
+  ],
+  inventory_flow: [
+    { key: "date", label: "时间" },
+    { key: "type", label: "类型" },
+    { key: "order_no", label: "单号" },
+    { key: "drug_name", label: "药品名称" },
+    { key: "batch_no", label: "批号" },
+    { key: "quantity", label: "数量" },
+    { key: "operator", label: "操作人" },
   ],
 };
 

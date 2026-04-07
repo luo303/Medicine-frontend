@@ -4,11 +4,10 @@ import type {
   PurchaseStorage,
 } from "@/types/purchase";
 import { cacheTag, cacheLife } from "next/cache";
-
-const API_BASE = "http://localhost:3001/api";
+import { API_BASE_URL } from "./api-config";
 
 async function fetchApi<T>(endpoint: string): Promise<T> {
-  const response = await fetch(`${API_BASE}${endpoint}`);
+  const response = await fetch(`${API_BASE_URL}${endpoint}`);
 
   if (!response.ok) {
     throw new Error(`API Error: ${response.status}`);

@@ -18,7 +18,7 @@ export default async function NewSalesOrderPage() {
     const drugOptions = drugs.map(drug => ({
         approval_no: drug.approval_no,
         name: drug.name,
-        price: drug.price || '0',
+        price: '0',
     }));
 
     return (

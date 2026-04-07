@@ -1,7 +1,6 @@
 import type { SalesOrder, SalesOutbound } from "@/types/sales";
 import { cacheTag, cacheLife } from "next/cache";
-
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3001/api";
+import { API_BASE_URL } from "./api-config";
 
 async function fetchApi<T>(endpoint: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {

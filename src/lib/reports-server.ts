@@ -9,9 +9,7 @@ import {
   type SalesOutbound,
   type Inventory,
 } from "./reports";
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001/api";
+import { API_BASE_URL } from "./api-config";
 
 interface ApiResponse<T> {
   code: number;
