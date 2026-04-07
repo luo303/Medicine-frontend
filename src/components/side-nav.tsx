@@ -74,6 +74,21 @@ export default function SideNav() {
                 { href: '/purchase/report', label: '采购报表' },
             ]
         },
+        {
+            label: '销售管理',
+            icon: (
+                <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={1.5} d='M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z' />
+                </svg>
+            ),
+            children: [
+                { href: '/sales/order-list', label: '销售单列表' },
+                { href: '/sales/new-order', label: '新增销售单' },
+                { href: '/sales/storage', label: '销售出库' },
+                { href: '/sales/return', label: '销售退货' },
+                { href: '/sales/report', label: '销售报表' },
+            ]
+        },
     ];
 
     const toggleMenu = (label: string) => {

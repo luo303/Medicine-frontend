@@ -3,55 +3,58 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { VirtualTable, type ColumnDef } from '@/components/virtual-table';
+import { EmptyState } from '@/components/empty-state';
 import { exportToExcel } from '@/lib/excel-export';
 import { Loader2 } from 'lucide-react';
-import type { PurchaseOrder } from '@/types/purchase';
-import { PURCHASE_STATUS_MAP } from '@/types/purchase';
+import type { SalesOrder } from '@/types/sales';
+import { SALES_STATUS_MAP } from '@/types/sales';
 
-interface PurchaseOrderListClientProps {
-    orders: PurchaseOrder[];
+interface OrderListClientProps {
+    orders: SalesOrder[];
 }
 
-export default function PurchaseOrderListClient({ orders }: PurchaseOrderListClientProps) {
+export function OrderListClient({ orders }: OrderListClientProps) {
     const [searchOrderNo, setSearchOrderNo] = useState('');
-    const [selectedSupplier, setSelectedSupplier] = useState('全部');
+    const [selectedCustomer, setSelectedCustomer] = useState('全部');
     const [selectedStatus, setSelectedStatus] = useState('全部');
     const [dateStart, setDateStart] = useState('');
     const [dateEnd, setDateEnd] = useState('');
     const [exporting, setExporting] = useState(false);
 
-    const suppliers = useMemo(() => {
-        const supplierSet = new Set<string>();
-        orders.forEach(item => {
-            if (item.manufacturer_name) {
-                supplierSet.add(item.manufacturer_name);
-            }
-        });
-        return ['全部', ...Array.from(supplierSet).sort()];
+    const customers = useMemo(() => {
+        const set = new Set<string>();
+        orders.forEach(order => set.add(order.institution_name));
+        return ['全部', ...Array.from(set).sort()];
     }, [orders]);
 
-    const filteredData = useMemo(() => {
-        return orders.filter(item => {
-            const matchOrderNo = item.order_no.includes(searchOrderNo);
-            const matchSupplier = selectedSupplier === '全部' || item.manufacturer_name === selectedSupplier;
-            const matchStatus = selectedStatus === '全部' || item.status === selectedStatus;
-            const matchDateStart = !dateStart || item.order_date >= dateStart;
-            const matchDateEnd = !dateEnd || item.order_date <= dateEnd;
-            return matchOrderNo && matchSupplier && matchStatus && matchDateStart && matchDateEnd;
+    const statuses = ['全部', '待审核', '已审核', '部分出库', '全部出库'];
+
+    const filteredOrders = useMemo(() => {
+        return orders.filter(order => {
+            if (searchOrderNo && !order.order_no.toLowerCase().includes(searchOrderNo.toLowerCase())) {
+                return false;
+            }
+            if (selectedCustomer !== '全部' && order.institution_name !== selectedCustomer) {
+                return false;
+            }
+            if (selectedStatus !== '全部' && order.status !== selectedStatus) {
+                return false;
+            }
+            if (dateStart && order.sales_date < dateStart) {
+                return false;
+            }
+            if (dateEnd && order.sales_date > dateEnd) {
+                return false;
+            }
+            return true;
         });
-    }, [orders, searchOrderNo, selectedSupplier, selectedStatus, dateStart, dateEnd]);
+    }, [orders, searchOrderNo, selectedCustomer, selectedStatus, dateStart, dateEnd]);
 
     const handleReset = () => {
         setSearchOrderNo('');
-        setSelectedSupplier('全部');
+        setSelectedCustomer('全部');
         setSelectedStatus('全部');
         setDateStart('');
         setDateEnd('');
@@ -61,16 +64,16 @@ export default function PurchaseOrderListClient({ orders }: PurchaseOrderListCli
         setExporting(true);
         try {
             await exportToExcel({
-                reportType: 'purchase',
-                reportLabel: '采购单列表',
-                rawData: filteredData,
+                reportType: 'sales',
+                reportLabel: '销售单列表',
+                rawData: filteredOrders,
             });
         } finally {
             setExporting(false);
         }
     };
 
-    const columns: ColumnDef<PurchaseOrder>[] = useMemo(() => [
+    const columns: ColumnDef<SalesOrder>[] = useMemo(() => [
         {
             key: 'checkbox',
             label: '选择',
@@ -82,19 +85,18 @@ export default function PurchaseOrderListClient({ orders }: PurchaseOrderListCli
         },
         {
             key: 'order_no',
-            label: '采购单号',
+            label: '销售单号',
             width: 160,
             render: (value) => <span className="font-mono text-sm text-teal-600">{value}</span>,
         },
         {
-            key: 'manufacturer_name',
-            label: '供应商',
-            width: 200,
+            key: 'institution_name',
+            label: '客户',
             render: (value) => <span className="font-medium">{value}</span>,
         },
         {
-            key: 'order_date',
-            label: '采购日期',
+            key: 'sales_date',
+            label: '销售日期',
             render: (value) => <span className="text-slate-600">{value}</span>,
         },
         {
@@ -110,15 +112,15 @@ export default function PurchaseOrderListClient({ orders }: PurchaseOrderListCli
             width: 100,
             align: 'center',
             render: (value: string) => {
-                const statusInfo = PURCHASE_STATUS_MAP[value] || { label: value, color: 'text-slate-500 bg-slate-50' };
+                const statusInfo = SALES_STATUS_MAP[value] || { label: value, color: 'text-slate-500 bg-slate-50' };
                 return (
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}>
-                        {value === '全部入库' && (
+                        {value === '全部出库' && (
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                         )}
-                        {value === '部分入库' && (
+                        {value === '部分出库' && (
                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
@@ -148,9 +150,9 @@ export default function PurchaseOrderListClient({ orders }: PurchaseOrderListCli
                     <Button variant="ghost" size="sm" className="h-7 px-2 text-teal-600 hover:text-teal-700">
                         详情
                     </Button>
-                    {(item.status === '已审核' || item.status === '部分入库') && (
+                    {(item.status === '已审核' || item.status === '部分出库') && (
                         <Button variant="ghost" size="sm" className="h-7 px-2 text-blue-600 hover:text-blue-700">
-                            入库
+                            出库
                         </Button>
                     )}
                     {item.status === '待审核' && (
@@ -167,58 +169,56 @@ export default function PurchaseOrderListClient({ orders }: PurchaseOrderListCli
         <div className="flex flex-col h-full p-6 space-y-4 overflow-hidden">
             <div className="flex items-center justify-between flex-shrink-0">
                 <div className="space-y-1">
-                    <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">采购单列表</h1>
-                    <p className="text-sm text-slate-500">管理采购订单信息</p>
+                    <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">销售单列表</h1>
+                    <p className="text-sm text-slate-500">管理销售订单信息</p>
                 </div>
                 <Button className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-md">
                     <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
-                    新增采购单
+                    新增销售单
                 </Button>
             </div>
 
             <div className="flex-shrink-0 bg-white dark:bg-slate-800/60 rounded-xl border border-slate-200/60 dark:border-slate-700/40 p-4">
-                <div className="flex flex-wrap items-center gap-4">
+                <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">单号：</span>
+                        <span className="text-sm text-slate-500 dark:text-slate-400">单号：</span>
                         <Input
                             className="w-32 h-8"
-                            placeholder="采购单号"
+                            placeholder="销售单号"
                             value={searchOrderNo}
                             onChange={(e) => setSearchOrderNo(e.target.value)}
                         />
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">供应商：</span>
-                        <Select value={selectedSupplier} onValueChange={setSelectedSupplier}>
+                        <span className="text-sm text-slate-500 dark:text-slate-400">客户：</span>
+                        <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
                             <SelectTrigger className="w-36 h-8">
-                                <SelectValue />
+                                <SelectValue placeholder="全部" />
                             </SelectTrigger>
                             <SelectContent>
-                                {suppliers.map(s => (
-                                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                                {customers.map(customer => (
+                                    <SelectItem key={customer} value={customer}>{customer}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">状态：</span>
+                        <span className="text-sm text-slate-500 dark:text-slate-400">状态：</span>
                         <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                             <SelectTrigger className="w-28 h-8">
-                                <SelectValue />
+                                <SelectValue placeholder="全部" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="全部">全部</SelectItem>
-                                <SelectItem value="待审核">待审核</SelectItem>
-                                <SelectItem value="已审核">已审核</SelectItem>
-                                <SelectItem value="部分入库">部分入库</SelectItem>
-                                <SelectItem value="全部入库">全部入库</SelectItem>
+                                {statuses.map(status => (
+                                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-sm text-slate-600 dark:text-slate-400">日期：</span>
+                        <span className="text-sm text-slate-500 dark:text-slate-400">日期：</span>
                         <Input
                             type="date"
                             className="w-32 h-8"
@@ -233,21 +233,16 @@ export default function PurchaseOrderListClient({ orders }: PurchaseOrderListCli
                             onChange={(e) => setDateEnd(e.target.value)}
                         />
                     </div>
-                    <div className="flex gap-2 ml-auto">
-                        <Button variant="outline" size="sm" onClick={handleReset}>重置</Button>
-                        <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+                    <div className="flex items-center gap-2 ml-auto">
+                        <Button variant="outline" size="sm" className="h-8" onClick={handleReset}>重置</Button>
+                        <Button variant="outline" size="sm" className="h-8" onClick={handleExport} disabled={exporting}>
                             {exporting ? (
                                 <>
                                     <Loader2 className="w-4 h-4 mr-1 animate-spin" />
                                     导出中...
                                 </>
                             ) : (
-                                <>
-                                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                    </svg>
-                                    导出
-                                </>
+                                '导出'
                             )}
                         </Button>
                     </div>
@@ -255,19 +250,22 @@ export default function PurchaseOrderListClient({ orders }: PurchaseOrderListCli
             </div>
 
             <div className="flex-1 min-h-0 bg-white dark:bg-slate-800/60 rounded-xl border border-slate-200/60 dark:border-slate-700/40 overflow-hidden">
-                <VirtualTable
-                    columns={columns}
-                    data={filteredData}
-                    rowKey={(item) => item.order_no}
-                    emptyText="暂无采购单数据"
-                />
+                {filteredOrders.length === 0 ? (
+                    <EmptyState title="暂无销售单数据" description="当前条件下没有找到相关销售单" />
+                ) : (
+                    <VirtualTable
+                        columns={columns}
+                        data={filteredOrders}
+                        rowKey={(item) => item.order_no}
+                    />
+                )}
             </div>
 
-            <div className="flex-shrink-0 flex items-center gap-4 py-2">
-                <span className="text-sm text-slate-500">批量操作：</span>
-                <Button variant="outline" size="sm">审核</Button>
-                <Button variant="outline" size="sm">入库</Button>
-                <Button variant="outline" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50">删除</Button>
+            <div className="flex items-center gap-3 mt-4">
+                <span className="text-sm text-slate-500 dark:text-slate-400">批量操作：</span>
+                <Button variant="outline" size="sm" className="h-8">审核</Button>
+                <Button variant="outline" size="sm" className="h-8">出库</Button>
+                <Button variant="outline" size="sm" className="h-8 text-red-600 hover:text-red-700">删除</Button>
             </div>
         </div>
     );

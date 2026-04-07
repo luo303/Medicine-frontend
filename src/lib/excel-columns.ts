@@ -3,7 +3,6 @@
  * 负责各报表类型的表头配置和原始数据到 Excel 行数据的映射
  */
 
-
 export type ReportType =
   | "manufacturer"
   | "drug"
@@ -14,7 +13,9 @@ export type ReportType =
   | "sales_outbound"
   | "inventory"
   | "warehouse"
-  | "storage_location";
+  | "storage_location"
+  | "sales_report"
+  | "purchase_report";
 
 export interface ExportColumnDef {
   key: string;
@@ -100,6 +101,21 @@ export const COLUMN_DEFS: Record<ReportType, ExportColumnDef[]> = {
     { key: "warehouseId", label: "仓库ID" },
     { key: "description", label: "描述" },
     { key: "capacity", label: "容量" },
+  ],
+  sales_report: [
+    { key: "month", label: "月份" },
+    { key: "orderCount", label: "销售单数" },
+    { key: "salesAmount", label: "销售额(¥)" },
+    { key: "costAmount", label: "成本(¥)" },
+    { key: "profit", label: "毛利(¥)" },
+    { key: "profitRate", label: "毛利率" },
+  ],
+  purchase_report: [
+    { key: "month", label: "月份" },
+    { key: "orderCount", label: "采购单数" },
+    { key: "purchaseAmount", label: "采购金额(¥)" },
+    { key: "storageAmount", label: "入库金额(¥)" },
+    { key: "returnAmount", label: "退货金额(¥)" },
   ],
 };
 

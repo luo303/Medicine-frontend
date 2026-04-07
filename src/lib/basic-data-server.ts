@@ -1,4 +1,3 @@
-"use cache";
 import { cacheLife } from "next/cache";
 import type {
   Manufacturer,

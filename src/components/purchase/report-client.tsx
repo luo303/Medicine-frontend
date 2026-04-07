@@ -10,6 +10,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { EmptyState } from '@/components/empty-state';
+import { exportToExcel } from '@/lib/excel-export';
+import { Loader2 } from 'lucide-react';
 import * as echarts from 'echarts';
 import type { PurchaseOrder, PurchaseReport } from '@/types/purchase';
 
@@ -23,6 +25,7 @@ export default function PurchaseReportClient({ orders }: PurchaseReportClientPro
     const [dimension, setDimension] = useState('month');
     const [year, setYear] = useState('');
     const [viewMode, setViewMode] = useState<'chart' | 'table'>('chart');
+    const [exporting, setExporting] = useState(false);
 
     const years = useMemo(() => {
         const yearSet = new Set<string>();
@@ -237,6 +240,25 @@ export default function PurchaseReportClient({ orders }: PurchaseReportClientPro
         return reportData.filter(d => !year || d.month.startsWith(year));
     }, [reportData, year]);
 
+    const handleExport = async () => {
+        setExporting(true);
+        try {
+            await exportToExcel({
+                reportType: 'purchase_report',
+                reportLabel: `采购报表${year ? `_${year}年` : ''}`,
+                rawData: tableData.map(d => ({
+                    month: d.month,
+                    orderCount: d.order_count,
+                    purchaseAmount: d.purchase_amount,
+                    storageAmount: d.storage_amount,
+                    returnAmount: d.return_amount,
+                })),
+            });
+        } finally {
+            setExporting(false);
+        }
+    };
+
     return (
         <div className="flex flex-col h-full p-6 space-y-4 overflow-hidden">
             <div className="flex items-center justify-between flex-shrink-0">
@@ -269,11 +291,20 @@ export default function PurchaseReportClient({ orders }: PurchaseReportClientPro
                             表格
                         </Button>
                     </div>
-                    <Button variant="outline" size="sm">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        导出
+                    <Button variant="outline" size="sm" onClick={handleExport} disabled={exporting}>
+                        {exporting ? (
+                            <>
+                                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                                导出中...
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                导出
+                            </>
+                        )}
                     </Button>
                 </div>
             </div>
