@@ -18,19 +18,32 @@ function getAuthHeaders(): Record<string, string> {
   return headers;
 }
 
+function handleUnauthorized(): void {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("auth_token");
+    window.location.href = "/login";
+  }
+}
+
+async function handleResponse<T>(response: Response): Promise<T> {
+  if (response.status === 401) {
+    handleUnauthorized();
+    throw new Error("Unauthorized");
+  }
+  if (!response.ok) {
+    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+  }
+  const result: ApiResponse<T> = await response.json();
+  return result.data;
+}
+
 async function postApi<T>(endpoint: string, data: unknown): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "POST",
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
-
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
-  }
-
-  const result: ApiResponse<T> = await response.json();
-  return result.data;
+  return handleResponse<T>(response);
 }
 
 async function putApi<T>(endpoint: string, data: unknown): Promise<T> {
@@ -39,13 +52,7 @@ async function putApi<T>(endpoint: string, data: unknown): Promise<T> {
     headers: getAuthHeaders(),
     body: JSON.stringify(data),
   });
-
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
-  }
-
-  const result: ApiResponse<T> = await response.json();
-  return result.data;
+  return handleResponse<T>(response);
 }
 
 async function deleteApi<T>(endpoint: string): Promise<T> {
@@ -53,13 +60,7 @@ async function deleteApi<T>(endpoint: string): Promise<T> {
     method: "DELETE",
     headers: getAuthHeaders(),
   });
-
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
-  }
-
-  const result: ApiResponse<T> = await response.json();
-  return result.data;
+  return handleResponse<T>(response);
 }
 
 export interface CreateDrugParams {
@@ -330,7 +331,7 @@ export interface CreatePurchaseOrderParams {
   order_date: string;
   manufacturerApprovalNo: string;
   manufacturer_name: string;
-  total_amount?: number;
+  total_amount?: string;
   purchaser?: string;
   status?: string;
 }
@@ -338,7 +339,7 @@ export interface CreatePurchaseOrderParams {
 export interface UpdatePurchaseOrderParams {
   order_date?: string;
   manufacturer_name?: string;
-  total_amount?: number;
+  total_amount?: string;
   purchaser?: string;
   status?: string;
 }
@@ -347,7 +348,7 @@ export interface PurchaseOrder {
   order_no: string;
   order_date: string;
   manufacturer_name: string;
-  total_amount?: number;
+  total_amount?: string;
 }
 
 export async function createPurchaseOrder(
@@ -374,12 +375,12 @@ export interface CreatePurchaseDetailParams {
   production_date: string;
   validity_months: number;
   quantity: number;
-  unit_price: number;
+  unit_price: string;
 }
 
 export interface UpdatePurchaseDetailParams {
   quantity?: number;
-  unit_price?: number;
+  unit_price?: string;
 }
 
 export interface PurchaseDetail {
@@ -387,8 +388,8 @@ export interface PurchaseDetail {
   orderNo: string;
   drug_name: string;
   quantity: number;
-  unit_price: number;
-  amount: number;
+  unit_price: string;
+  amount: string;
 }
 
 export async function createPurchaseDetail(
@@ -459,7 +460,7 @@ export interface CreateSalesOrderParams {
   sales_date: string;
   institutionApprovalNo: string;
   institution_name: string;
-  total_amount?: number;
+  total_amount?: string;
   salesperson?: string;
   status?: string;
 }
@@ -467,7 +468,7 @@ export interface CreateSalesOrderParams {
 export interface UpdateSalesOrderParams {
   sales_date?: string;
   institution_name?: string;
-  total_amount?: number;
+  total_amount?: string;
   salesperson?: string;
   status?: string;
 }
@@ -476,7 +477,7 @@ export interface SalesOrder {
   order_no: string;
   sales_date: string;
   institution_name: string;
-  total_amount?: number;
+  total_amount?: string;
 }
 
 export async function createSalesOrder(
@@ -501,12 +502,12 @@ export interface CreateSalesDetailParams {
   drugApprovalNo: string;
   drug_name: string;
   quantity: number;
-  unit_price: number;
+  unit_price: string;
 }
 
 export interface UpdateSalesDetailParams {
   quantity?: number;
-  unit_price?: number;
+  unit_price?: string;
 }
 
 export interface SalesDetail {
@@ -514,8 +515,8 @@ export interface SalesDetail {
   orderNo: string;
   drug_name: string;
   quantity: number;
-  unit_price: number;
-  amount: number;
+  unit_price: string;
+  amount: string;
 }
 
 export async function createSalesDetail(

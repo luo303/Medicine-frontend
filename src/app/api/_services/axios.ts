@@ -16,6 +16,34 @@ export const apiClient = axios.create({
 });
 
 /**
+ * 处理 401 未授权响应
+ */
+function handleUnauthorized(): void {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("auth_token");
+    window.location.href = "/login";
+  }
+}
+
+/**
+ * 请求拦截器 - 统一添加 token
+ */
+apiClient.interceptors.request.use(
+  (config) => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("auth_token");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
+
+/**
  * 响应拦截器 - 统一处理错误
  */
 apiClient.interceptors.response.use(
@@ -25,7 +53,9 @@ apiClient.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
 
-    if (!status && error.message === "Network Error") {
+    if (status === 401) {
+      handleUnauthorized();
+    } else if (!status && error.message === "Network Error") {
       console.error("网络连接失败，请检查服务是否正常运行");
     } else if (status >= 500) {
       console.error(`服务器错误 (${status})`);

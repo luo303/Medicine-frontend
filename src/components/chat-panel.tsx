@@ -5,6 +5,14 @@ import { Textarea } from '@/components/ui/textarea';
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useTheme } from '@/components/theme-provider';
+import { getToken } from '@/app/api/auth/token';
+
+function handleUnauthorized(): void {
+    if (typeof window !== 'undefined') {
+        localStorage.removeItem('auth_token');
+        window.location.href = '/login';
+    }
+}
 
 export default function ChatPanel() {
     const [input, setInput] = useState('');
@@ -57,16 +65,22 @@ export default function ChatPanel() {
         setInput('');
 
         try {
+            const token = getToken();
             const res = await fetch('http://localhost:3001/api/ai/chat/stream', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjEsInVzZXJuYW1lIjoiYWRtaW4iLCJpYXQiOjE3NzM0Njg3NjYsImV4cCI6MTgwNTAyNjM2Nn0.M6aZfnbdr-tnFs40ioarCA8dEQtlhK0GrC8S0_QNvBw`,
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                 },
                 body: JSON.stringify({
                     messages: [...messages, { role: 'user', content: userInput }],
                 }),
             });
+
+            if (res.status === 401) {
+                handleUnauthorized();
+                throw new Error('Unauthorized');
+            }
 
             if (!res.ok) {
                 throw new Error(`请求失败：${res.status}`);
