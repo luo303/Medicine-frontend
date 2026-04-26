@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "./api-config";
-import { getToken } from "@/features/auth/lib/token";
+import { getToken, removeToken } from "@/features/auth/lib/token";
 
 interface ApiResponse<T> {
   code: number;
@@ -20,7 +20,7 @@ function getAuthHeaders(): Record<string, string> {
 
 function handleUnauthorized(): void {
   if (typeof window !== "undefined") {
-    localStorage.removeItem("auth_token");
+    removeToken();
     window.location.href = "/login";
   }
 }

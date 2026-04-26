@@ -10,7 +10,7 @@ import { useTheme } from '@/components/theme-provider';
 
 export default function RegisterPage() {
     const router = useRouter();
-    const { theme, toggleTheme } = useTheme();
+    const { theme, setTheme } = useTheme();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -67,7 +67,7 @@ export default function RegisterPage() {
 
             {/* 主题切换按钮 */}
             <button
-                onClick={toggleTheme}
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 className='absolute top-5 right-5 z-30 w-10 h-10 flex items-center justify-center rounded-xl bg-white/8 backdrop-blur-md border border-white/10 text-slate-300 hover:text-white hover:bg-white/15 transition-all duration-300'
                 aria-label={theme === 'dark' ? '切换亮色模式' : '切换暗色模式'}
             >

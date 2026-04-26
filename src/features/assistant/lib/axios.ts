@@ -2,6 +2,7 @@
  * Axios 实例配置
  */
 import axios from "axios";
+import { getToken, removeToken } from "@/features/auth/lib/token";
 
 const API_BASE_URL = "http://localhost:3001/api";
 
@@ -20,7 +21,7 @@ export const apiClient = axios.create({
  */
 function handleUnauthorized(): void {
   if (typeof window !== "undefined") {
-    localStorage.removeItem("auth_token");
+    removeToken();
     window.location.href = "/login";
   }
 }
@@ -30,11 +31,9 @@ function handleUnauthorized(): void {
  */
 apiClient.interceptors.request.use(
   (config) => {
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("auth_token");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+    const token = getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },

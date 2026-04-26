@@ -1,16 +1,23 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { login } from '@/features/auth/api/auth';
+import { HOME_ROUTE } from '@/features/auth/lib/auth-constants';
+import { setToken } from '@/features/auth/lib/token';
 import { useTheme } from '@/components/theme-provider';
+
+function isSafeRedirectPath(path: string | null): path is string {
+    return typeof path === 'string' && path.startsWith('/') && !path.startsWith('//');
+}
 
 export default function LoginPage() {
     const router = useRouter();
-    const { theme, toggleTheme } = useTheme();
+    const searchParams = useSearchParams();
+    const { theme, setTheme } = useTheme();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -26,9 +33,10 @@ export default function LoginPage() {
             
             if (result.code === 1 || result.code === 200) {
                 if (result.data?.token) {
-                    localStorage.setItem('auth_token', result.data.token);
+                    setToken(result.data.token);
                 }
-                router.push('/home');
+                const nextPath = searchParams.get('next');
+                router.replace(isSafeRedirectPath(nextPath) ? nextPath : HOME_ROUTE);
             } else {
                 setError(result.message || '登录失败');
             }
@@ -59,7 +67,7 @@ export default function LoginPage() {
 
             {/* 主题切换按钮 */}
             <button
-                onClick={toggleTheme}
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
                 className='absolute top-5 right-5 z-30 w-10 h-10 flex items-center justify-center rounded-xl bg-white/8 backdrop-blur-md border border-white/10 text-slate-300 hover:text-white hover:bg-white/15 transition-all duration-300'
                 aria-label={theme === 'dark' ? '切换亮色模式' : '切换暗色模式'}
             >
