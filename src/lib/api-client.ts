@@ -1,5 +1,5 @@
 import { API_BASE_URL } from "./api-config";
-import { getToken } from "@/app/api/auth/token";
+import { getToken } from "@/features/auth/lib/token";
 
 interface ApiResponse<T> {
   code: number;

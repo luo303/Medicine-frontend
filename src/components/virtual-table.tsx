@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState, useEffect, useRef, useCallback } from 'react';
+import { memo, useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
 import { List, type RowComponentProps } from 'react-window';
 
 export interface ColumnDef<T = any> {
@@ -24,6 +24,7 @@ interface VirtualTableProps<T = any> {
 
 const DEFAULT_ROW_HEIGHT = 52;
 const DEFAULT_HEADER_HEIGHT = 48;
+const subscribeToClient = () => () => {};
 
 function VirtualRowInner<T>({
     index,
@@ -31,7 +32,7 @@ function VirtualRowInner<T>({
     columns,
     data,
     onRowClick,
-    rowHeight,
+    rowHeight: _rowHeight,
 }: RowComponentProps<{
     columns: ColumnDef<T>[];
     data: T[];
@@ -88,7 +89,7 @@ const VirtualRow = memo(VirtualRowInner) as typeof VirtualRowInner;
 function VirtualTableInner<T extends Record<string, any>>({
     columns,
     data,
-    rowKey,
+    rowKey: _rowKey,
     onRowClick,
     emptyText = '暂无数据',
     rowHeight = DEFAULT_ROW_HEIGHT,
@@ -97,11 +98,7 @@ function VirtualTableInner<T extends Record<string, any>>({
 }: VirtualTableProps<T>) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [listHeight, setListHeight] = useState(400);
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const isClient = useSyncExternalStore(subscribeToClient, () => true, () => false);
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -192,7 +189,7 @@ function VirtualTableInner<T extends Record<string, any>>({
                 })}
             </div>
 
-            {mounted && (
+            {isClient && (
                 <div className="flex-1">
                     <List
                         className="scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-transparent"

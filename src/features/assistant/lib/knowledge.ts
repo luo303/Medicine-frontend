@@ -2,7 +2,6 @@
  * 知识库相关 API 服务
  */
 import apiClient from './axios';
-import axios from 'axios';
 
 export interface KnowledgeFile {
     id: string;

@@ -11,6 +11,10 @@ interface StorageClientProps {
     orders: SalesOrder[];
 }
 
+function getPreviewInventoryQty(seed: string): number {
+    return 500 + Array.from(seed).reduce((sum, char) => sum + char.charCodeAt(0), 0) % 1000;
+}
+
 export function StorageClient({ orders }: StorageClientProps) {
     const [selectedOrderNo, setSelectedOrderNo] = useState('');
     const [outboundQuantities, setOutboundQuantities] = useState<Record<string, number>>({});
@@ -105,7 +109,7 @@ export function StorageClient({ orders }: StorageClientProps) {
                                 const outboundQty = outboundQuantities[detail.drugApprovalNo] || 0;
                                 const alreadyOutbound = Math.floor(detail.quantity * 0.5);
                                 const remaining = detail.quantity - alreadyOutbound;
-                                const inventoryQty = Math.floor(Math.random() * 1000) + 500;
+                                const inventoryQty = getPreviewInventoryQty(`${detail.id}-${detail.drugApprovalNo}`);
 
                                 return (
                                     <tr key={detail.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-700/20">

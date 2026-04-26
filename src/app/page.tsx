@@ -1,7 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken } from '@/app/api/auth/token';
+import { getToken } from '@/features/auth/lib/token';
 
 export default function HomePage() {
     const router = useRouter();

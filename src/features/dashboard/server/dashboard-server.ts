@@ -1,6 +1,6 @@
 "use cache";
 import { cacheLife } from "next/cache";
-import { API_BASE_URL } from "./api-config";
+import { API_BASE_URL } from "@/lib/api-config";
 
 interface ApiResponse<T> {
   code: number;

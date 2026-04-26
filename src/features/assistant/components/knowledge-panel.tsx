@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import { uploadKnowledgeFile, getKnowledgeFiles, type KnowledgeFile, type UploadProgress } from '@/app/api/_services/knowledge';
+import { uploadKnowledgeFile, getKnowledgeFiles, type KnowledgeFile, type UploadProgress } from '@/features/assistant/lib/knowledge';
 
 export default function KnowledgePanel() {
     // 知识库文件上传相关状态

@@ -13,7 +13,7 @@ import {
     ArrowUpRight,
     Package
 } from 'lucide-react';
-import type { DashboardStats } from '@/lib/dashboard-server';
+import type { DashboardStats } from '@/features/dashboard/server/dashboard-server';
 
 interface DashboardProps {
     stats: DashboardStats;

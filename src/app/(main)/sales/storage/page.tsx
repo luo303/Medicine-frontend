@@ -1,5 +1,5 @@
-import { getSalesOrders } from '@/lib/sales-server';
-import { StorageClient } from '@/components/sales/storage-client';
+import { StorageClient } from '@/features/sales/components/storage-client';
+import { getSalesOrders } from '@/features/sales/server/sales-server';
 
 export default async function SalesStoragePage() {
     const orders = await getSalesOrders();

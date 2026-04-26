@@ -1,6 +1,6 @@
 import type { SalesOrder, SalesOutbound } from "@/types/sales";
 import { cacheTag, cacheLife } from "next/cache";
-import { API_BASE_URL } from "./api-config";
+import { API_BASE_URL } from "@/lib/api-config";
 
 async function fetchApi<T>(endpoint: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {

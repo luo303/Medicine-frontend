@@ -21,7 +21,7 @@ import { formatDate, formatCurrency } from '@/lib/utils';
 import { Loader2, FileBox, Eye, Search, X, Building2, Pill, Hospital, ShoppingCart, Receipt, PackageOpen, Truck, ClipboardList, ChevronRight, Sparkles, Download } from 'lucide-react';
 import { exportToExcel } from '@/lib/excel-export';
 import { VirtualTable, type ColumnDef } from '@/components/virtual-table';
-import type { AllReportsData } from '@/lib/reports-server';
+import type { AllReportsData } from '@/features/reports/server/reports-server';
 
 type ReportType =
     | 'manufacturer'

@@ -1,5 +1,5 @@
-import { getSalesOrders } from '@/lib/sales-server';
-import { OrderListClient } from '@/components/sales/order-list-client';
+import { OrderListClient } from '@/features/sales/components/order-list-client';
+import { getSalesOrders } from '@/features/sales/server/sales-server';
 
 export default async function SalesOrderListPage() {
     const orders = await getSalesOrders();

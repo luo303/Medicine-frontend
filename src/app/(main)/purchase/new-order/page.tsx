@@ -1,5 +1,5 @@
-import { getManufacturers, getDrugs } from '@/lib/basic-data-server';
-import NewPurchaseOrderClient from '@/components/purchase/new-order-client';
+import NewPurchaseOrderClient from '@/features/purchase/components/new-order-client';
+import { getManufacturers, getDrugs } from '@/features/basic-data/server/basic-data-server';
 
 export default async function NewPurchaseOrderPage() {
     const [manufacturers, drugs] = await Promise.all([

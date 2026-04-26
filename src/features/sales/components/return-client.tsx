@@ -15,6 +15,7 @@ const RETURN_REASONS = ['临近效期', '质量问题', '包装破损', '客户�
 
 export function ReturnClient({ orders }: ReturnClientProps) {
     const [returnDate, setReturnDate] = useState(new Date().toISOString().split('T')[0]);
+    const [returnOrderNo] = useState(() => `R${new Date().toISOString().slice(0, 10).replace(/-/g, '')}${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`);
     const [selectedInstitution, setSelectedInstitution] = useState('');
     const [selectedOrderNo, setSelectedOrderNo] = useState('');
     const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
@@ -84,7 +85,7 @@ export function ReturnClient({ orders }: ReturnClientProps) {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="flex items-center gap-2">
                         <span className="text-sm text-slate-500 dark:text-slate-400 w-20">退货单号：</span>
-                        <span className="font-mono text-teal-600">R{new Date().toISOString().slice(0, 10).replace(/-/g, '')}{String(Math.floor(Math.random() * 1000)).padStart(3, '0')}</span>
+                        <span className="font-mono text-teal-600">{returnOrderNo}</span>
                         <span className="text-xs text-slate-400">（自动生成）</span>
                     </div>
                     <div className="flex items-center gap-2">

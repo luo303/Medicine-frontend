@@ -1,5 +1,5 @@
-import { getInventories } from '@/lib/inventory-server';
-import { InventoryClient } from '@/components/inventory/inventory-client';
+import { InventoryClient } from '@/features/inventory/components/inventory-client';
+import { getInventories } from '@/features/inventory/server/inventory-server';
 
 export default async function InventoryPage() {
     const inventories = await getInventories();

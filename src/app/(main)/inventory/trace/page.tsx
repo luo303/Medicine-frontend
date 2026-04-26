@@ -1,5 +1,5 @@
-import { getInventories } from '@/lib/inventory-server';
-import { TraceClient } from '@/components/inventory/trace-client';
+import { TraceClient } from '@/features/inventory/components/trace-client';
+import { getInventories } from '@/features/inventory/server/inventory-server';
 
 export default async function BatchTracePage() {
     const inventories = await getInventories();

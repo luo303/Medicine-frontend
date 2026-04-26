@@ -1,7 +1,6 @@
-import { getSalesOrders } from '@/lib/sales-server';
-import { getMedicalInstitutions } from '@/lib/basic-data-server';
-import { getDrugs } from '@/lib/basic-data-server';
-import { NewOrderClient } from '@/components/sales/new-order-client';
+import { NewOrderClient } from '@/features/sales/components/new-order-client';
+import { getMedicalInstitutions, getDrugs } from '@/features/basic-data/server/basic-data-server';
+import { getSalesOrders } from '@/features/sales/server/sales-server';
 
 export default async function NewSalesOrderPage() {
     const [orders, institutions, drugs] = await Promise.all([

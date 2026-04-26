@@ -1,5 +1,5 @@
-import { getManufacturers } from '@/lib/basic-data-server';
-import ManufacturersClient from '@/components/basic-data/manufacturers-client';
+import ManufacturersClient from '@/features/basic-data/components/manufacturers-client';
+import { getManufacturers } from '@/features/basic-data/server/basic-data-server';
 
 export default async function ManufacturersPage() {
     const manufacturers = await getManufacturers();

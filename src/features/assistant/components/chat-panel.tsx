@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useTheme } from '@/components/theme-provider';
-import { getToken } from '@/app/api/auth/token';
+import { getToken } from '@/features/auth/lib/token';
 
 function handleUnauthorized(): void {
     if (typeof window !== 'undefined') {

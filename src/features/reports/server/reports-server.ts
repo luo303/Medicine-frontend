@@ -9,7 +9,7 @@ import {
   type SalesOutbound,
   type Inventory,
 } from "./reports";
-import { API_BASE_URL } from "./api-config";
+import { API_BASE_URL } from "@/lib/api-config";
 
 interface ApiResponse<T> {
   code: number;

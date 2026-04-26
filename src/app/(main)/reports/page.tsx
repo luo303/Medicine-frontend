@@ -1,5 +1,5 @@
-import { getAllReportsData } from '@/lib/reports-server';
-import ReportsClient from '@/components/reports-client';
+import ReportsClient from '@/features/reports/components/reports-client';
+import { getAllReportsData } from '@/features/reports/server/reports-server';
 
 export default async function ReportsPage() {
     const initialData = await getAllReportsData();

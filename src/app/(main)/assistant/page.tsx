@@ -1,12 +1,8 @@
 'use client';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import ChatPanel from '@/components/chat-panel';
-import KnowledgePanel from '@/components/knowledge-panel';
+import ChatPanel from '@/features/assistant/components/chat-panel';
+import KnowledgePanel from '@/features/assistant/components/knowledge-panel';
 
 export default function AssistantPage() {
-    const router = useRouter();
-
     return (
         <div className='flex h-full overflow-hidden'>
             <div className='flex-1 flex flex-col overflow-hidden'>
