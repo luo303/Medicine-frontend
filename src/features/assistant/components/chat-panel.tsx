@@ -5,11 +5,9 @@ import { Textarea } from '@/components/ui/textarea';
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useTheme } from '@/components/theme-provider';
-import { getToken, removeToken } from '@/features/auth/lib/token';
 
 function handleUnauthorized(): void {
     if (typeof window !== 'undefined') {
-        removeToken();
         window.location.href = '/login';
     }
 }
@@ -70,13 +68,12 @@ export default function ChatPanel() {
         setInput('');
 
         try {
-            const token = getToken();
             const res = await fetch('http://localhost:3001/api/ai/chat/stream', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
                 },
+                credentials: 'include',
                 body: JSON.stringify({
                     messages: [...messages, { role: 'user', content: userInput }],
                 }),

@@ -1,5 +1,4 @@
 import { API_BASE_URL } from "./api-config";
-import { getToken, removeToken } from "@/features/auth/lib/token";
 
 interface ApiResponse<T> {
   code: number;
@@ -8,19 +7,13 @@ interface ApiResponse<T> {
 }
 
 function getAuthHeaders(): Record<string, string> {
-  const token = getToken();
-  const headers: Record<string, string> = {
+  return {
     "Content-Type": "application/json",
   };
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-  return headers;
 }
 
 function handleUnauthorized(): void {
   if (typeof window !== "undefined") {
-    removeToken();
     window.location.href = "/login";
   }
 }
@@ -41,6 +34,7 @@ async function postApi<T>(endpoint: string, data: unknown): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "POST",
     headers: getAuthHeaders(),
+    credentials: "include",
     body: JSON.stringify(data),
   });
   return handleResponse<T>(response);
@@ -50,6 +44,7 @@ async function putApi<T>(endpoint: string, data: unknown): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "PUT",
     headers: getAuthHeaders(),
+    credentials: "include",
     body: JSON.stringify(data),
   });
   return handleResponse<T>(response);
@@ -59,6 +54,7 @@ async function deleteApi<T>(endpoint: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
+    credentials: "include",
   });
   return handleResponse<T>(response);
 }

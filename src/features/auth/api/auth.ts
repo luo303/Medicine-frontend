@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:3001/api";
+export const API_BASE_URL = "http://localhost:3001/api";
 
 export interface LoginRequest {
   username: string;
@@ -24,6 +24,7 @@ export async function login(data: LoginRequest): Promise<AuthResponse> {
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
   return response.json();
@@ -35,6 +36,7 @@ export async function register(data: RegisterRequest): Promise<AuthResponse> {
     headers: {
       "Content-Type": "application/json",
     },
+    credentials: "include",
     body: JSON.stringify(data),
   });
   return response.json();

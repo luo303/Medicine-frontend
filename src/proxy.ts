@@ -1,39 +1,33 @@
-import { NextRequest, NextResponse } from 'next/server';
-import {
-    AUTH_TOKEN_COOKIE_NAME,
-    HOME_ROUTE,
-    LOGIN_ROUTE,
-    REGISTER_ROUTE,
-} from '@/features/auth/lib/auth-constants';
+import { NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_ROUTES = new Set([LOGIN_ROUTE, REGISTER_ROUTE]);
+const WHITE_LIST = ["/login", "/register"];
 
-export default function proxy(request: NextRequest) {
-    const { pathname, search } = request.nextUrl;
-    const token = request.cookies.get(AUTH_TOKEN_COOKIE_NAME)?.value;
-    const isAuthenticated = Boolean(token);
-    const isAuthRoute = PUBLIC_ROUTES.has(pathname);
-    const isRootRoute = pathname === '/';
+function isWhiteListed(pathname: string): boolean {
+  return WHITE_LIST.some((path) => pathname.startsWith(path));
+}
 
-    if (isAuthenticated && (isAuthRoute || isRootRoute)) {
-        return NextResponse.redirect(new URL(HOME_ROUTE, request.url));
-    }
-
-    if (!isAuthenticated && !isAuthRoute) {
-        const loginUrl = new URL(LOGIN_ROUTE, request.url);
-
-        if (!isRootRoute) {
-            loginUrl.searchParams.set('next', `${pathname}${search}`);
-        }
-
-        return NextResponse.redirect(loginUrl);
-    }
-
+export default async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  console.log(request.nextUrl);
+  console.log(pathname);
+  // 白名单页面直接放行
+  if (isWhiteListed(pathname)) {
     return NextResponse.next();
+  }
+
+  const cookie = request.cookies.get("token");
+  console.log(cookie);
+  if (!cookie) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+  if (cookie && cookie.value) {
+    return NextResponse.next();
+  }
+  return NextResponse.redirect(new URL("/home", request.url));
 }
 
 export const config = {
-    matcher: [
-        '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)',
-    ],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+  ],
 };

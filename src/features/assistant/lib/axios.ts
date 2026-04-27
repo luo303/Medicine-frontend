@@ -2,7 +2,6 @@
  * Axios 实例配置
  */
 import axios from "axios";
-import { getToken, removeToken } from "@/features/auth/lib/token";
 
 const API_BASE_URL = "http://localhost:3001/api";
 
@@ -14,6 +13,7 @@ export const apiClient = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 /**
@@ -21,20 +21,15 @@ export const apiClient = axios.create({
  */
 function handleUnauthorized(): void {
   if (typeof window !== "undefined") {
-    removeToken();
     window.location.href = "/login";
   }
 }
 
 /**
- * 请求拦截器 - 统一添加 token
+ * 请求拦截器
  */
 apiClient.interceptors.request.use(
   (config) => {
-    const token = getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
     return config;
   },
   (error) => {

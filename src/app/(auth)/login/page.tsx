@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { login } from '@/features/auth/api/auth';
 import { HOME_ROUTE } from '@/features/auth/lib/auth-constants';
-import { setToken } from '@/features/auth/lib/token';
+
 import { useTheme } from '@/components/theme-provider';
 
 function isSafeRedirectPath(path: string | null): path is string {
@@ -32,14 +32,11 @@ export default function LoginPage() {
         e.preventDefault();
         setError('');
         setLoading(true);
-
+        console.log(username, password);
         try {
             const result = await login({ username, password });
-            
+            console.log(result);
             if (result.code === 1 || result.code === 200) {
-                if (result.data?.token) {
-                    setToken(result.data.token);
-                }
                 const nextPath = searchParams.get('next');
                 router.replace(isSafeRedirectPath(nextPath) ? nextPath : HOME_ROUTE);
             } else {

@@ -1,17 +1,12 @@
 'use client';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken } from '@/features/auth/lib/token';
 
 export default function HomePage() {
     const router = useRouter();
 
     useEffect(() => {
-        const token = getToken();
-        if (token) {
-            router.push('/home');
-        } else {
-            router.push('/login');
-        }
+        // 直接重定向到登录页面，让后端处理认证状态
+        router.push('/login');
     }, [router]);
 }
